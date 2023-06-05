@@ -17,6 +17,9 @@
 ;; Install all the needed packages, or activate it
 (dolist (package (quote (smex
                          ido-completing-read+
+                         ido-grid-mode
+                         ido-at-point
+                         flx-ido
                          pulsar
                          ace-window
                          diminish
@@ -30,7 +33,8 @@
                          magit
                          typescript-mode
                          diff-hl
-                         which-key)))
+                         which-key
+                         perspective)))
   (if (package-installed-p package)
       (require (intern (concat (symbol-name package)
                                "-config")))

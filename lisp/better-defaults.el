@@ -43,13 +43,6 @@
 ;;; Code:
 
 (progn
-  (unless (or (fboundp 'helm-mode) (fboundp 'ivy-mode))
-    (ido-mode t)
-    (ido-everywhere 1)
-    (setq use-short-answers t)
-    (setq ido-enable-flex-matching t)
-    (setq ido-use-virtual-buffers t))
-
   (unless (memq window-system '(mac ns))
     (menu-bar-mode -1))
   (when (fboundp 'tool-bar-mode)
