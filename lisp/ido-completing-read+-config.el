@@ -3,4 +3,4 @@
 (require 'ido-completing-read+)
 (ido-ubiquitous-mode 1)
 
-(provide 'ido-config)
+(provide 'ido-completing-read+-config)
