@@ -73,6 +73,7 @@
   (delete-selection-mode 1)
   
   (show-paren-mode 1)
+  (setq use-short-answers t)
   (setq-default indent-tabs-mode nil)
   (savehist-mode 1)
   (setq save-interprogram-paste-before-kill t

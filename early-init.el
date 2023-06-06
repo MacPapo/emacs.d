@@ -1,4 +1,5 @@
 (setq gc-cons-threshold most-positive-fixnum)
+
 (setq load-prefer-newer noninteractive)
 (setq package-enable-at-startup nil)
 (setq-default inhibit-redisplay t
@@ -11,3 +12,5 @@
 
 (define-advice load-file (:override (file) silence)
   (load file nil 'nomessage))
+
+(setq gc-cons-threshold 20000000)
