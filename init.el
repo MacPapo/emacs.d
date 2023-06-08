@@ -14,12 +14,21 @@
 (when (not package-archive-contents)
   (package-refresh-contents))
 
+(when (member "IBM Plex Mono" (font-family-list))
+  (custom-set-faces
+   '(default ((t (:family "IBM Plex Mono" :height 125))))))
+
+
 ;; Install all the needed packages, or activate it
-(dolist (package (quote (smex
+(dolist (package (quote (
+                         ;; IDO PACKAGES
+                         smex
                          ido-completing-read+
                          ido-grid-mode
-                         ido-at-point
                          flx-ido
+
+                         neotree
+                         corfu
                          pulsar
                          ace-window
                          diminish
@@ -28,13 +37,20 @@
                          highlight-thing
                          smart-hungry-delete
                          multiple-cursors
-                         easy-kill
                          browse-kill-ring
                          magit
-                         typescript-mode
+                         
                          diff-hl
                          which-key
-                         perspective)))
+                         perspective
+
+                         ;; EGLOT
+                         eglot
+
+                         ;; LANG PACKAGES
+                         typescript-mode
+
+                         )))
   (if (package-installed-p package)
       (require (intern (concat (symbol-name package)
                                "-config")))

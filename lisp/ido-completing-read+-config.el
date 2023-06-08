@@ -17,6 +17,8 @@
       ido-use-filename-at-point 'guess
       ido-use-url-at-point t
       ido-enable-prefix nil
+      ido-use-virtual-buffers t
+      ido-virtual-buffer-style '("[v] " ido-virtual)
       ido-default-buffer-method 'selected-window)
 
 (provide 'ido-completing-read+-config)
