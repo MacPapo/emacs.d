@@ -4,7 +4,7 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
 ;; Load Theme
-(load-theme 'modus-operandi t)
+(load-theme 'modus-vivendi t)
 
 ;; Load Better defaults
 (require 'better-defaults)

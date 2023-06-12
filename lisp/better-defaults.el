@@ -73,8 +73,6 @@
   (delete-selection-mode 1)
 
   (global-display-line-numbers-mode t)
-
-  (display-battery-mode 1)
   (display-time-mode 1)
   
   (show-paren-mode 1)
