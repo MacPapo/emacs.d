@@ -8,9 +8,18 @@
       (require package)
     (package-install package)))
 
-(setq eglot-ignored-server-capabilites '(:documentHighlightProvider)
-      eglot-stay-out-of '(:hover)
-      eglot-max-num-diagnostics 100
-      eglot-sync-method 'incremental)
+(setq eglot-max-num-diagnostics 100
+      eglot-sync-method 'incremental
+      eglot-menu-string "LSP"
+      )
+
+(setq-default flymake-no-changes-timeout nil)
+(setq-default flymake-start-syntax-check-on-newline nil)
+
+(add-hook 'js-mode-hook 'eglot-ensure)
+(add-hook 'typescript-mode-hook 'eglot-ensure)
+(add-hook 'python-mode-hook 'eglot-ensure)
+(add-hook 'c++-mode-hook 'eglot-ensure)
+(add-hook 'dart-mode-hook 'eglot-ensure)
 
 (provide 'eglot-config)

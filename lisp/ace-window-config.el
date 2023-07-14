@@ -1,5 +1,11 @@
 ;; -*- lexical-binding: t; -*-
 ;;
+
+(require 'ace-window)
+(require 'pulsar)
+
+(add-to-list 'pulsar-pulse-functions 'ace-window)
+
 ;; Ace Window Config
 ;; Remember:
 ;; x - delete window

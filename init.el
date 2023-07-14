@@ -6,6 +6,9 @@
 ;; Load Theme
 (load-theme 'modus-operandi t)
 
+;; Enable Fido Vertical Mode
+(fido-vertical-mode 1)
+
 ;; Load Better defaults
 (require 'better-defaults)
 
@@ -18,40 +21,23 @@
   (custom-set-faces
    '(default ((t (:family "IBM Plex Mono" :height 125))))))
 
-
-;; Install all the needed packages, or activate it
-(dolist (package (quote (
-                         ;; IDO PACKAGES
-                         smex
-                         ido-completing-read+
-                         ido-grid-mode
-                         flx-ido
-
-                         neotree
-                         corfu
-                         pulsar
-                         ace-window
-                         diminish
-                         crux
-                         aggressive-indent
-                         highlight-thing
-                         smart-hungry-delete
-                         multiple-cursors
-                         browse-kill-ring
-                         magit
-                         
-                         diff-hl
-                         which-key
-                         perspective
-
-                         ;; EGLOT
-                         eglot
-
-                         ;; LANG PACKAGES
-                         typescript-mode
-
-                         )))
-  (if (package-installed-p package)
-      (require (intern (concat (symbol-name package)
-                               "-config")))
-    (package-install package)))
+(mapc (lambda (x)
+        (unless (package-installed-p x)
+          (package-install x))
+        (require (intern (concat (symbol-name x)
+                                 "-config"))))
+      '(neotree
+        corfu
+        pulsar
+        ace-window
+        diminish
+        crux
+        aggressive-indent
+        multiple-cursors
+        browse-kill-ring
+        magit
+        diff-hl
+        which-key
+        eglot
+        typescript-mode
+        dart-mode))
