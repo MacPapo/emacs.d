@@ -61,6 +61,9 @@
   ;; https://www.emacswiki.org/emacs/SavePlace
   (save-place-mode 1)
 
+  (set-fringe-style '(2 . nil))
+
+
   (global-set-key (kbd "M-RET") 'hippie-expand)
   (global-set-key (kbd "C-x C-b") 'ibuffer)
   (global-set-key (kbd "M-z") 'zap-up-to-char)
@@ -72,11 +75,12 @@
 
   (delete-selection-mode 1)
 
-  (global-display-line-numbers-mode t)
-
-  (display-battery-mode 1)
-  (display-time-mode 1)
+  (add-hook 'prog-mode-hook 'display-line-numbers-mode)
   
+  (display-battery-mode 1)
+  (setq display-time-default-load-average nil)
+  (display-time-mode 1)
+
   (show-paren-mode 1)
   (setq use-short-answers t)
   (setq-default indent-tabs-mode nil)
@@ -95,6 +99,21 @@
   (unless backup-directory-alist
     (setq backup-directory-alist `(("." . ,(concat user-emacs-directory
                                                    "backups"))))))
+
+(defun crm-indicator (args)
+  (cons (format "[CRM%s] %s"
+                (replace-regexp-in-string
+                 "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                 crm-separator)
+                (car args))
+        (cdr args)))
+(advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+
+;; Do not allow the cursor in the minibuffer prompt
+(setq minibuffer-prompt-properties
+      '(read-only t cursor-intangible t face minibuffer-prompt))
+(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+(setq enable-recursive-minibuffers t)
 
 (provide 'better-defaults)
 ;;; better-defaults.el ends here

@@ -6,9 +6,6 @@
 ;; Load Theme
 (load-theme 'modus-operandi t)
 
-;; Enable Fido Vertical Mode
-(fido-vertical-mode 1)
-
 ;; Load Better defaults
 (require 'better-defaults)
 
@@ -27,6 +24,7 @@
         (require (intern (concat (symbol-name x)
                                  "-config"))))
       '(neotree
+        vertico
         corfu
         pulsar
         ace-window
@@ -34,10 +32,11 @@
         crux
         aggressive-indent
         multiple-cursors
-        browse-kill-ring
         magit
         diff-hl
         which-key
         eglot
+        marginalia
+        consult
         typescript-mode
         dart-mode))

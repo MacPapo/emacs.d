@@ -5,11 +5,11 @@
   (package-install 'orderless))
 
 (require 'corfu)
+(require 'orderless)
 
-(setq completion-styles '(orderless)
-      completion-category-overrides '((file (styles partial-completion)))
-      completion-at-point-functions '(capf)
-      )
+(setq completion-styles '(orderless basic)
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles partial-completion))))
 
 (define-key corfu-map (kbd "<tab>") 'corfu-complete)
 (define-key corfu-map (kbd "TAB") 'corfu-complete)

@@ -10,11 +10,10 @@
 
 (setq eglot-max-num-diagnostics 100
       eglot-sync-method 'incremental
-      eglot-menu-string "LSP"
-      )
+      eglot-menu-string "LSP")
 
-(setq-default flymake-no-changes-timeout nil)
-(setq-default flymake-start-syntax-check-on-newline nil)
+(setq-default flymake-no-changes-timeout nil
+              flymake-start-syntax-check-on-newline nil)
 
 (add-hook 'js-mode-hook 'eglot-ensure)
 (add-hook 'typescript-mode-hook 'eglot-ensure)

@@ -14,8 +14,7 @@
       dart-server-sdk-path (concat (getenv "HOME") "FlutterDev/flutter/bin/cache/dark-sdk/")
       dart-format-on-save t
       flutter-sdk-path "~/FlutterDev/flutter/"
-      dart-server-enable-analysis-server t
-      )
+      dart-server-enable-analysis-server t)
 
 (define-key dart-mode-map (kbd "C-M-x") 'flutter-run-or-hot-reload)
 (add-hook 'dart-server-hook 'flycheck-mode)
