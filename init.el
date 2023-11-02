@@ -42,8 +42,10 @@
 (require 'pre-defaults)
 ;; Add Vertico Packages
 (require 'pre-vertico)
-;; Add Ruby packages
+
+;; Add Lang specific packages
 (require 'pre-ruby)
+(require 'pre-dart)
 
 (package-install-selected-packages t)
 
@@ -66,4 +68,6 @@
 ;;; LANGS
 ;; Ruby Lang
 (require 'init-ruby)
+(require 'init-dart)
+
 ;;; init.el ends here

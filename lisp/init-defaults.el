@@ -20,6 +20,13 @@
 (global-hl-line-mode +1)
 (delete-selection-mode t)
 
+;; Auto refresh buffers
+(global-auto-revert-mode 1)
+
+;; Also auto refresh dired, but be quiet about it
+(setq global-auto-revert-non-file-buffers t)
+(setq auto-revert-verbose nil)
+
 (setq savehist-additional-variables '(search-ring regexp-search-ring))
 (setq savehist-autosave-interval 60)
 (savehist-mode +1)
@@ -47,6 +54,12 @@
  echo-keystrokes 0.02
  truncate-partial-width-windows nil)
 
+;; isearch config
+(setq isearch-repeat-on-direction-change t
+      isearch-wrap-pause nil
+      isearch-forward-thing-at-point '(region url email symbol sexp)
+      isearch-allow-prefix t)
+
 ;; Multiple Cursors
 (require 'multiple-cursors)
 (global-set-key (kbd "C->") 'mc/mark-next-like-this)
@@ -60,6 +73,14 @@
 ;; Expand Region config
 (require 'expand-region)
 (global-set-key (kbd "C-=") 'er/expand-region)
+
+;; Which key integration
+(require 'which-key)
+(which-key-mode)
+
+;; Highlight indent guides config
+(require 'highlight-indent-guides)
+(add-hook 'prog-mode-hook 'highlight-indent-guides-mode)
 
 (provide 'init-defaults)
 ;;; init-defaults.el ends here

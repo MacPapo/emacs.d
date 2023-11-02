@@ -1,4 +1,4 @@
-;;; pre-vertico.el --- Add packages for Ruby Config ;; -*- lexical-binding: t; -*-
+;;; pre-vertico.el --- Add packages for Vertico Config ;; -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;;; Code:
 
