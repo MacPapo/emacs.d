@@ -16,3 +16,6 @@
 /tramp
 /custom.el
 /SessionDesktop.el
+/projectile-bookmarks.eld
+/lisp/*.elc
+/.mc-lists.el

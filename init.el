@@ -1,42 +1,69 @@
-;; -*- lexical-binding: t; -*-
+;;; init.el --- Emacs Minimal Config ;; -*- lexical-binding: t; -*-
+
+;;; Commentary:
+
+;;; Code:
+
 (require 'package)
-(add-to-list 'load-path (concat user-emacs-directory "lisp"))
+(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
-;; Load Theme
-(load-theme 'modus-operandi t)
+(setq custom-file (locate-user-emacs-file "custom.el"))
+(when (file-exists-p custom-file)
+  (load custom-file))
 
-;; Load Better defaults
-(require 'better-defaults)
+;; Load Theme
+(load-theme 'modus-vivendi t)
 
 ;; Initialize the package manager
 (package-initialize)
 (when (not package-archive-contents)
   (package-refresh-contents))
 
-(when (member "IBM Plex Mono" (font-family-list))
-  (custom-set-faces
-   '(default ((t (:family "IBM Plex Mono" :height 125))))))
-
-(mapc (lambda (x)
-        (unless (package-installed-p x)
-          (package-install x))
-        (require (intern (concat (symbol-name x)
-                                 "-config"))))
-      '(neotree
+;; Minimal Selection
+(setq package-selected-packages
+      '(
+        ;; Vertico Packages
         vertico
+        orderless
+
+        ;; Corfu Completion
         corfu
-        pulsar
-        ace-window
-        diminish
-        crux
-        aggressive-indent
-        multiple-cursors
+
+        ;; Project
+        projectile
+
+        ;; Git
         magit
-        diff-hl
-        which-key
-        eglot
-        marginalia
-        consult
-        typescript-mode
-        dart-mode))
+        ))
+
+;; Other Packages
+;; Add Editing Utils Packages
+(require 'pre-defaults)
+;; Add Vertico Packages
+(require 'pre-vertico)
+;; Add Ruby packages
+(require 'pre-ruby)
+
+(package-install-selected-packages t)
+
+;; Editing Utils
+(require 'init-defaults)
+
+;; Completion
+(require 'init-vertico)
+(require 'init-corfu)
+
+;; Git
+(require 'init-git)
+
+;; Project
+(require 'init-project)
+
+;; Eglot LSP
+(require 'init-eglot)
+
+;;; LANGS
+;; Ruby Lang
+(require 'init-ruby)
+;;; init.el ends here
