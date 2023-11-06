@@ -71,8 +71,8 @@
 (global-set-key (kbd "C-:") 'avy-goto-char-timer)
 
 ;; Expand Region config
-(require 'expand-region)
-(global-set-key (kbd "C-=") 'er/expand-region)
+;; (require 'expand-region)
+;; (global-set-key (kbd "C-=") 'er/expand-region)
 
 ;; Which key integration
 (require 'which-key)
@@ -80,7 +80,26 @@
 
 ;; Highlight indent guides config
 (require 'highlight-indent-guides)
+(setq highlight-indent-guides-method 'character)
 (add-hook 'prog-mode-hook 'highlight-indent-guides-mode)
+
+;; CRUX
+(require 'crux)
+(global-set-key [remap move-beginning-of-line] #'crux-move-beginning-of-line)
+(global-set-key (kbd "C-o") #'crux-smart-open-line)
+(global-set-key (kbd "C-S-o") #'crux-smart-open-line-above)
+(global-set-key (kbd "C-k") #'crux-smart-kill-line)
+(global-set-key (kbd "C-<backspace>") #'crux-kill-line-backwards)
+(global-set-key [remap kill-whole-line] #'crux-kill-whole-line)
+(global-set-key (kbd "M-<down>") #'crux-duplicate-current-line-or-region)
+(global-set-key (kbd "M-S-<down>") #'crux-duplicate-and-comment-current-line-or-region)
+(global-set-key (kbd "C-c K") #'crux-kill-other-buffers)
+(global-set-key (kbd "M-o") #'crux-other-window-or-switch-buffer)
+
+;; Smartparens
+(require 'smartparens-config)
+(add-hook 'prog-mode-hook #'smartparens-mode)
+(add-hook 'text-mode-hook #'smartparens-mode)
 
 (provide 'init-defaults)
 ;;; init-defaults.el ends here

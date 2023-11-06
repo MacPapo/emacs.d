@@ -4,9 +4,11 @@
 
 (add-to-list 'package-selected-packages 'multiple-cursors)
 (add-to-list 'package-selected-packages 'avy)
+(add-to-list 'package-selected-packages 'crux)
 (add-to-list 'package-selected-packages 'expand-region)
 (add-to-list 'package-selected-packages 'which-key)
 (add-to-list 'package-selected-packages 'highlight-indent-guides)
+(add-to-list 'package-selected-packages 'smartparens)
 
 (provide 'pre-defaults)
 ;;; pre-defaults.el ends here

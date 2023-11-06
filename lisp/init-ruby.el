@@ -28,8 +28,7 @@
 ;; If RVM is installed then
 (when *rvm-installed*
   (require 'rvm)
-  (advice-add 'inf-ruby-console-auto :before #'rvm-activate-corresponding-ruby)
-  (add-hook 'after-init-hook #'rvm-use-default))
+  (advice-add 'inf-ruby-console-auto :before #'rvm-activate-corresponding-ruby))
 
 (provide 'init-ruby)
 ;;; init-ruby.el ends here
