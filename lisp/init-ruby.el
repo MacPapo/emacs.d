@@ -16,11 +16,6 @@
 (require 'robe)
 (add-hook 'enh-ruby-mode-hook 'robe-mode)
 
-;; Projectile Rails
-(require 'projectile-rails)
-(define-key projectile-rails-mode-map (kbd "C-c r") 'projectile-rails-command-map)
-(projectile-rails-global-mode)
-
 ;; Rubocop
 (require 'rubocop)
 (add-hook 'enh-ruby-mode-hook #'rubocop-mode)

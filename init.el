@@ -30,9 +30,6 @@
         ;; Corfu Completion
         corfu
 
-        ;; Project
-        projectile
-
         ;; Git
         magit
         ))
@@ -43,7 +40,7 @@
 ;; Add Editing Utils Packages
 (require 'pre-defaults)
 ;; Add Vertico Packages
-;;(require 'pre-vertico)
+(require 'pre-vertico)
 
 ;; Add Lang specific packages
 (require 'pre-ruby)

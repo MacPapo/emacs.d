@@ -6,7 +6,6 @@
 (add-to-list 'package-selected-packages 'inf-ruby)
 (add-to-list 'package-selected-packages 'enh-ruby-mode)
 (add-to-list 'package-selected-packages 'robe)
-(add-to-list 'package-selected-packages 'projectile-rails)
 (add-to-list 'package-selected-packages 'rubocop)
 
 (provide 'pre-ruby)
