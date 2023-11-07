@@ -12,9 +12,6 @@
 (when (file-exists-p custom-file)
   (load custom-file))
 
-;; Load Theme
-;; (load-theme 'modus-vivendi t)
-
 ;; Initialize the package manager
 (package-initialize)
 (when (not package-archive-contents)

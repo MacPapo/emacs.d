@@ -71,8 +71,8 @@
 (global-set-key (kbd "C-:") 'avy-goto-char-timer)
 
 ;; Expand Region config
-;; (require 'expand-region)
-;; (global-set-key (kbd "C-=") 'er/expand-region)
+(require 'expand-region)
+(global-set-key (kbd "C-=") 'er/expand-region)
 
 ;; Which key integration
 (require 'which-key)
