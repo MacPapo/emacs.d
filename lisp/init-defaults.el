@@ -1,6 +1,16 @@
 ;;; init-defaults.el --- Better Emacs Defaults ;; -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;;; Code:
+
+(require 'orderless)
+(setq completion-auto-wrap t
+      completion-auto-help nil
+      completions-max-height 15
+      completion-styles '(orderless basic)
+      completion-category-overrides '((file (styles basic partial-completion)))
+      max-mini-window-height 10)
+(fido-vertical-mode 1)
+
 (require 'savehist)
 
 (prefer-coding-system 'utf-8)

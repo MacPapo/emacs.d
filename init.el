@@ -23,12 +23,11 @@
 ;; Minimal Selection
 (setq package-selected-packages
       '(
-        ;; Vertico Packages
-        vertico
-        orderless
-
+        xah-fly-keys
+        
         ;; Corfu Completion
         corfu
+        orderless
 
         ;; Project
         projectile
@@ -51,6 +50,9 @@
 
 (package-install-selected-packages t)
 
+;; Enable Xah Fly Keys
+(require 'init-xah-fly-keys)
+
 ;; Theme
 (require 'init-themes)
 
@@ -58,7 +60,6 @@
 (require 'init-defaults)
 
 ;; Completion
-(require 'init-vertico)
 (require 'init-corfu)
 
 ;; Git
@@ -76,4 +77,3 @@
 (require 'init-dart)
 
 ;;; init.el ends here
-(put 'upcase-region 'disabled nil)
