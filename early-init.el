@@ -98,18 +98,19 @@
 
 (setq inhibit-startup-screen t
       inhibit-startup-echo-area-message t
+      window-resize-pixelwise t
       initial-scratch-message ";; Happy Hacking\n\n")
 
 (setq pop-up-windows nil)
 
 ;; Reduce the frequency of garbage collection
 (setq gc-cons-threshold (* 128 1000 1000)) ; 128mb
-(setq gc-cons-percentage 0.6)
-(add-hook 'after-init-hook
-          (lambda ()
-            ;; Restore after startup
-            (setq gc-cons-threshold (* 20 1000 1000)) ; 20mb
-            (setq gc-cons-percentage 0.1)))
+(setq gc-cons-percentage 0.5)
+;; (add-hook 'after-init-hook
+;;           (lambda ()
+;;             ;; Restore after startup
+;;             (setq gc-cons-threshold (* 20 1000 1000)) ; 20mb
+;;             (setq gc-cons-percentage 0.1)))
 
 (provide 'early-init)
 ;;; early-init.el ends here

@@ -27,6 +27,9 @@
         ;; Corfu Completion
         corfu
 
+        ;; Yasnippet and Snippets
+        yasnippet
+        
         ;; Git
         magit
         ))
@@ -38,6 +41,8 @@
 (require 'pre-defaults)
 ;; Add Vertico Packages
 (require 'pre-vertico)
+(require 'pre-corfu)
+(require 'pre-yasnippet)
 
 ;; Add Lang specific packages
 (require 'pre-ruby)
@@ -69,5 +74,6 @@
 (require 'init-ruby)
 (require 'init-dart)
 
+;; Garbage collect at the end of startup
+(add-hook 'after-init-hook #'garbage-collect t)
 ;;; init.el ends here
-(put 'upcase-region 'disabled nil)

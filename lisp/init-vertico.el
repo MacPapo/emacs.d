@@ -36,9 +36,10 @@
   (define-key vertico-map (kbd "M-DEL") 'vertico-directory-delete-word))
 
 ;; Orderless settings
-(setq completion-styles '(orderless basic)
-      completion-category-defaults nil
-      completion-category-overrides '((file (styles partial-completion))))
+(setq completion-category-defaults nil
+      completion-styles '(orderless flex)
+      completion-category-overrides '((file (styles partial-completion))
+                                      (eglot (styles . (orderless flex)))))
 
 ;; Consult Config
 (setq register-preview-delay 0.5
