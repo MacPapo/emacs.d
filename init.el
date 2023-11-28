@@ -41,6 +41,9 @@
 (unless (package-installed-p 'which-key)
   (package-install 'which-key))
 
+(unless (package-installed-p 'magit)
+  (package-install 'magit))
+
 (unless (package-installed-p 'rvm)
   (package-install 'rvm))
 
