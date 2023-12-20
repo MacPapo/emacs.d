@@ -5,75 +5,48 @@
 ;;; Code:
 
 (require 'package)
-(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(package-initialize)
 
-(setq custom-file (locate-user-emacs-file "custom.el"))
+(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+
+;; Bootstrap `use-package`
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+(eval-when-compile
+  (require 'use-package))
+(setq use-package-always-ensure t
+      use-package-always-defer t)
+(use-package use-package-ensure-system-package)
+
+;; Set up custom file
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (when (file-exists-p custom-file)
   (load custom-file))
 
-;; Initialize the package manager
-(package-initialize)
-(when (not package-archive-contents)
-  (package-refresh-contents))
+;; Completions
+(require 'init-ido)
+(require 'init-company)
 
-;; Minimal Selection
-(setq package-selected-packages
-      '(
-        ;; Vertico Packages
-        vertico
-        orderless
-
-        ;; Corfu Completion
-        corfu
-
-        ;; Yasnippet and Snippets
-        yasnippet
-        
-        ;; Git
-        magit
-        ))
-
-;; Other Packages
-;; Add Themes packages
-(require 'pre-themes)
-;; Add Editing Utils Packages
-(require 'pre-defaults)
-;; Add Vertico Packages
-(require 'pre-vertico)
-(require 'pre-corfu)
-(require 'pre-yasnippet)
-
-;; Add Lang specific packages
-(require 'pre-ruby)
-(require 'pre-dart)
-
-(package-install-selected-packages t)
-
-;; Theme
+;; UI & UX
+(require 'init-defaults)
 (require 'init-themes)
 
-;; Editing Utils
-(require 'init-defaults)
-
-;; Completion
-(require 'init-vertico)
-(require 'init-corfu)
-
-;; Git
+;; Projects related
+(require 'init-projectile)
 (require 'init-git)
 
-;; Project
-(require 'init-project)
+;; Org stuff
+(require 'init-org)
 
-;; Eglot LSP
-(require 'init-eglot)
-
-;;; LANGS
-;; Ruby Lang
+;; LANGS
 (require 'init-ruby)
 (require 'init-dart)
+(require 'init-sql)
 
-;; Garbage collect at the end of startup
-(add-hook 'after-init-hook #'garbage-collect t)
+;; MISC
+(require 'init-docker)
+
+(provide 'init)
 ;;; init.el ends here

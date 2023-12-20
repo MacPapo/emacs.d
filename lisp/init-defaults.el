@@ -1,179 +1,238 @@
 ;;; init-defaults.el --- Better Emacs Defaults ;; -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;;; Code:
-(require 'savehist)
 
-(prefer-coding-system 'utf-8)
-(set-default-coding-systems 'utf-8)
-(set-terminal-coding-system 'utf-8)
-(set-keyboard-coding-system 'utf-8)
+(use-package emacs
+  :ensure nil
+  :demand t
+  :config
+  (prefer-coding-system 'utf-8)
+  (set-default-coding-systems 'utf-8)
+  (set-terminal-coding-system 'utf-8)
+  (set-keyboard-coding-system 'utf-8)
 
-(setq-default
- line-number-mode t
- column-number-mode t
- size-indication-mode t)
+  (electric-pair-mode +1)
+  (show-paren-mode +1)
+  (global-hl-line-mode +1)
+  (delete-selection-mode +1)
+  (subword-mode +1)
+  (save-place-mode +1)
 
-(setq x-selection-timeout 100)
+  (setq display-time-day-and-date t
+        display-time-24hr-format  t
+        display-time-default-load-average nil)
+  (display-time-mode +1)
+  
+  (setq global-auto-revert-non-file-buffers t
+	auto-revert-verbose nil
+	auto-revert-use-notify nil)
+  (global-auto-revert-mode +1)
 
-(setq-default
- fill-column 80)
+  (setq-default
+   line-number-mode t
+   column-number-mode t
+   size-indication-mode t
+   fill-column 80
+   blink-cursor-interval 0.4
+   bookmark-default-file (locate-user-emacs-file ".bookmarks.el")
+   buffers-menu-max-size 30
+   case-fold-search t
+   load-prefer-newer t
+   ediff-split-window-function 'split-window-horizontally
+   ediff-window-setup-function 'ediff-setup-windows-plain
+   indent-tabs-mode nil
+   auto-save-default nil
+   mouse-yank-at-point t
+   read-buffer-completion-ignore-case t
+   read-file-name-completion-ignore-case t
+   save-interprogram-paste-before-kill t
+   scroll-preserve-screen-position 'always
+   set-mark-command-repeat-pop t
+   tooltip-delay 1.5
+   truncate-lines nil
+   visible-bell t
+   use-short-answers t
+   kill-do-not-save-duplicates t
+   echo-keystrokes 0.02
+   truncate-partial-width-windows nil)
 
-(electric-pair-mode +1)
-(global-hl-line-mode +1)
-(delete-selection-mode t)
+  (setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backups"))))
+  ;; (setq auto-save-file-name-transforms
+  ;;     `((".*" ,(concat user-emacs-directory "backups/") t)))
 
-;; Auto refresh buffers
-(global-auto-revert-mode 1)
+  (setq x-selection-timeout 100
+        select-enable-clipboard t
+        x-select-enable-clipboard-manager nil)
 
-(winner-mode 1)
-(global-set-key (kbd "M-N") #'winner-redo)
-(global-set-key (kbd "M-P") #'winner-undo)
-(remove-hook 'minibuffer-setup-hook 'winner-save-unconditionally)
+  ;; (setq scroll-margin 1
+  ;;       scroll-conservatively 10000
+  ;;       scroll-preserve-screen-position 1)
 
-(require 'recentf)
-(recentf-mode 1)
-(setq recentf-max-saved-items 600
-      recentf-exclude '("COMMIT_MSG" "COMMIT_EDITMSG" "github.*txt$"
-                        "[0-9a-f]\\{32\\}-[0-9a-f]\\{32\\}\\.org"
-                        ".*png$" ".*cache$"))
+  ;; EMACS C
+  (setq auto-hscroll-mode 'current-line
+	auto-save-interval 64
+	auto-save-timeout 2
+	enable-recursive-minibuffers t
+	history-delete-duplicates t
+	history-length 200)
 
-(remove-hook 'after-change-major-mode-hook
-             'global-eldoc-mode-enable-in-buffers)
+  (setq backup-by-copying t
+	delete-old-versions t
+	version-control t
+        compilation-scroll-output 'first-error
+	create-lockfiles nil
+	redisplay-dont-pause t
+        confirm-kill-emacs 'y-or-n-p
+	undo-limit 800000
+        max-lisp-eval-depth 10000
+	x-stretch-cursor t)
 
-(global-eldoc-mode -1)
+  ;; enable features
+  (mapc (lambda (x) (put x 'disabled nil))
+	'(erase-buffer upcase-region downcase-region dired-find-alternate-file narrow-to-region)))
 
-;; EMACS C
-(setq auto-hscroll-mode 'current-line)
-(setq auto-save-interval 64)
-(setq auto-save-timeout 2)
-(setq enable-recursive-minibuffers t)
-(setq history-delete-duplicates t)
-(setq history-length 200)
+(use-package savehist
+  :ensure nil
+  :config
+  (setq savehist-additional-variables '(search-ring regexp-search-ring))
+  (setq savehist-autosave-interval 60)
+  (savehist-mode +1))
 
-(require 'uniquify)
-(setq uniquify-buffer-name-style 'reverse)
-(setq uniquify-separator "/")
-(setq uniquify-ignore-buffers-re "^\\*")
+(use-package recentf
+  :ensure nil
+  :config
+  (setq recentf-max-saved-items 600
+	recentf-exclude '("COMMIT_MSG" "COMMIT_EDITMSG" "github.*txt$"
+                          "[0-9a-f]\\{32\\}-[0-9a-f]\\{32\\}\\.org"
+                          ".*png$" ".*cache$"))
+  (recentf-mode 1))
 
-(setq dired-listing-switches "-laGh1v --group-directories-first")
+(use-package eldoc
+  :ensure nil
+  :config
+  (remove-hook 'after-change-major-mode-hook
+	       'global-eldoc-mode-enable-in-buffers)
+  (global-eldoc-mode -1))
 
-;; Also auto refresh dired, but be quiet about it
-(setq global-auto-revert-non-file-buffers t)
-(setq auto-revert-verbose nil)
-(setq auto-revert-use-notify nil)
+(use-package winner
+  :ensure nil
+  :bind (("M-N" . winner-redo)
+	 ("M-P" . winner-undo))
+  :config
+  (remove-hook 'minibuffer-setup-hook 'winner-save-unconditionally)
+  (winner-mode 1))
 
-(setq savehist-additional-variables '(search-ring regexp-search-ring))
-(setq savehist-autosave-interval 60)
-(savehist-mode +1)
+(use-package uniquify
+  :ensure nil
+  :config
+  (setq uniquify-buffer-name-style 'forward
+	uniquify-separator "/"
+	uniquify-ignore-buffers-re "^\\*"))
 
-(setq list-directory-brief-switches "-CFh"
-      list-directory-verbose-switches "-lh")
+(use-package display-line-numbers
+  :ensure nil
+  :hook prog-mode
+  :config
+  (setq-default display-line-numbers-width 3))
 
-(setq backup-by-copying t)
-(setq delete-old-versions t)
-(setq version-control t)
-(setq create-lockfiles nil)
-(setq redisplay-dont-pause t)
-(setq undo-limit 800000)
-(setq x-stretch-cursor t)
+(use-package display-fill-column-indicator
+    :ensure nil
+    :hook prog-mode
+    :config
+    (setq-default
+     indicate-buffer-boundaries 'left
+     display-fill-column-indicator-character ?\u254e))
 
-(when *is-a-mac*
-   ;; Settings for the Cocoa port
-  (setq ns-alternate-modifier 'alt)
-  (setq ns-command-modifier 'meta)
-  (setq ns-function-modifier 'hyper)
-  (setq ns-right-alternate-modifier 'alt)
+(use-package dired
+  :ensure nil
+  :config
+  (setq dired-listing-switches "-laGh1v"
+	list-directory-brief-switches "-CFh"
+	list-directory-verbose-switches "-lhG"
+        dired-recursive-deletes 'always
+        dired-recursive-copies 'always
+        dired-dwim-target t))
+
+(use-package mac-config
+  :ensure nil
+  :if (eq *is-a-mac* t)
+  :config
+  (setq ns-alternate-modifier 'alt
+	ns-command-modifier 'meta
+	ns-function-modifier 'hyper
+	ns-right-alternate-modifier 'alt)
 
   ;; Settings for the Emacs Mac-port
-  (setq mac-command-modifier 'meta)
-  (setq mac-option-modifier 'alt)
-  (setq mac-pass-command-to-system nil))
+  (setq mac-command-modifier 'meta
+	mac-option-modifier 'alt
+	mac-pass-command-to-system nil))
 
-;;** enable features
-(mapc (lambda (x) (put x 'disabled nil))
-      '(erase-buffer upcase-region downcase-region
-        dired-find-alternate-file narrow-to-region))
+(use-package isearch
+  :ensure nil
+  :config
+  (setq isearch-repeat-on-direction-change t
+	isearch-wrap-pause nil
+	isearch-lazy-count t
+	lazy-count-prefix-format "[%s of %s] "
+	isearch-forward-thing-at-point '(region url email symbol sexp)
+	isearch-allow-prefix t))
 
-(setq-default
- blink-cursor-interval 0.4
- bookmark-default-file (locate-user-emacs-file ".bookmarks.el")
- buffers-menu-max-size 30
- case-fold-search t
- load-prefer-newer t
- ediff-split-window-function 'split-window-horizontally
- ediff-window-setup-function 'ediff-setup-windows-plain
- indent-tabs-mode nil
- auto-save-default nil
- mouse-yank-at-point t
- read-buffer-completion-ignore-case t
- read-file-name-completion-ignore-case t
- save-interprogram-paste-before-kill t
- scroll-preserve-screen-position 'always
- set-mark-command-repeat-pop t
- tooltip-delay 1.5
- truncate-lines nil
- visible-bell t
- use-short-answers t
- kill-do-not-save-duplicates t
- echo-keystrokes 0.02
- truncate-partial-width-windows nil)
+(use-package multiple-cursors
+  :bind (("C->" . mc/mark-next-like-this)
+	 ("C-<" . mc/mark-previous-like-this)
+	 ("C-c C-<" . mc/mark-all-like-this)))
 
-;; isearch config
-(setq isearch-repeat-on-direction-change t
-      isearch-wrap-pause nil
-      isearch-lazy-count t
-      lazy-count-prefix-format "[%s of %s] "
-      isearch-forward-thing-at-point '(region url email symbol sexp)
-      isearch-allow-prefix t)
+(use-package avy
+  :bind ("C-j" . avy-goto-char-timer)
+  :config
+  (setq avy-timeout-seconds 0.25))
 
-;; Multiple Cursors
-(require 'multiple-cursors)
-(global-set-key (kbd "C->") 'mc/mark-next-like-this)
-(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
-(global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
+(use-package ace-window
+  :bind ("M-o" . ace-window)
+  :config
+  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
 
-;; Avy config
-(require 'avy)
-(setq avy-timeout-seconds 0.25)
-(global-set-key (kbd "C-j") 'avy-goto-char-timer)
+(use-package ibuffer
+  :ensure nil
+  :bind (("C-x C-b" . ibuffer)))
 
-;; Expand Region config
-(require 'expand-region)
-(global-set-key (kbd "C-=") 'er/expand-region)
+(use-package expand-region
+  :bind ("C-=" . er/expand-region))
 
-;; Which key integration
-(require 'which-key)
-(which-key-mode)
+(use-package which-key
+  :config
+  (which-key-mode))
 
-;; Highlight indent guides config
-(require 'highlight-indent-guides)
-(setq highlight-indent-guides-method 'character)
-(add-hook 'prog-mode-hook 'highlight-indent-guides-mode)
+(use-package crux
+  :bind (
+	 ("C-o" . crux-smart-open-line)
+	 ("C-S-o" . crux-smart-open-line-above)
+	 ("C-k" . crux-smart-kill-line)
+	 ("C-<backspace>". crux-kill-line-backwards)
+	 ("M-<down>" . crux-duplicate-current-line-or-region)
+	 ("M-S-<down>" . crux-duplicate-and-comment-current-line-or-region)
+	 ("C-c K" . crux-kill-other-buffers)
+         ("M-j" . crux-top-join-line)
 
-;; CRUX
-(require 'crux)
-(global-set-key [remap move-beginning-of-line] #'crux-move-beginning-of-line)
-(global-set-key (kbd "C-o") #'crux-smart-open-line)
-(global-set-key (kbd "C-S-o") #'crux-smart-open-line-above)
-(global-set-key (kbd "C-k") #'crux-smart-kill-line)
-(global-set-key (kbd "C-<backspace>") #'crux-kill-line-backwards)
-(global-set-key [remap kill-whole-line] #'crux-kill-whole-line)
-(global-set-key (kbd "M-<down>") #'crux-duplicate-current-line-or-region)
-(global-set-key (kbd "M-S-<down>") #'crux-duplicate-and-comment-current-line-or-region)
-(global-set-key (kbd "C-c K") #'crux-kill-other-buffers)
-(global-set-key (kbd "M-o") #'crux-other-window-or-switch-buffer)
+         ([remap move-beginning-of-line] . crux-move-beginning-of-line)
+         ([remap kill-whole-line] . crux-kill-whole-line)))
+
+(use-package rainbow-delimiters
+  :hook prog-mode
+  ;; :diminish rainbow-mode
+  )
 
 ;; Smartparens
-(require 'smartparens-config)
-(setq show-paren-delay 0)
-(setq sp-highlight-pair-overlay nil)
-(add-hook 'prog-mode-hook #'smartparens-mode)
-(add-hook 'text-mode-hook #'smartparens-mode)
+;; (require 'smartparens-config)
+;; (setq show-paren-delay 0)
+;; (setq sp-highlight-pair-overlay nil)
+;; (add-hook 'prog-mode-hook #'smartparens-mode)
+;; (add-hook 'text-mode-hook #'smartparens-mode)
 
 ;; Yasnippet
-(require 'yasnippet)
-(yas-reload-all)
-(add-hook 'prog-mode-hook #'yas-minor-mode)
+;; (require 'yasnippet)
+;; (yas-reload-all)
+;; (add-hook 'prog-mode-hook #'yas-minor-mode)
 
 (provide 'init-defaults)
 ;;; init-defaults.el ends here

@@ -85,11 +85,6 @@
       (when (display-graphic-p use-frame)
         (set-frame-parameter use-frame 'menu-bar-lines 1)))))
 
-    ;;; Encodings
-;; Contrary to what many Emacs users have in their configs, you don't need more
-;; than this to make UTF-8 the default coding system:
-(set-language-environment "UTF-8")
-
 (setq default-input-method nil)
 (global-so-long-mode 1)
 
@@ -104,8 +99,8 @@
 (setq pop-up-windows nil)
 
 ;; Reduce the frequency of garbage collection
-(setq gc-cons-threshold (* 128 1000 1000)) ; 128mb
-(setq gc-cons-percentage 0.5)
+;; (setq gc-cons-threshold (* 128 1000 1000)) ; 128mb
+;; (setq gc-cons-percentage 0.5)
 ;; (add-hook 'after-init-hook
 ;;           (lambda ()
 ;;             ;; Restore after startup

@@ -2,28 +2,41 @@
 ;;; Commentary:
 ;;; Code:
 
-(require 'enh-ruby-mode)
+(use-package inf-ruby
+  :hook ((ruby-mode    . inf-ruby-minor-mode)
+         (ruby-ts-mode . inf-ruby-minor-mode)))
 
-;; Hooks for Enhanced Ruby Mode
-(add-to-list 'auto-mode-alist
-             '("\\(?:\\.rb\\|ru\\|rake\\|thor\\|jbuilder\\|gemspec\\|podspec\\|/\\(?:Gem\\|Rake\\|Cap\\|Thor\\|Vagrant\\|Guard\\|Pod\\)file\\)\\'" . enh-ruby-mode))
-
-;; Inferior Ruby Mode
-(require 'inf-ruby)
-(add-hook 'enh-ruby-mode-hook 'inf-ruby-minor-mode)
-
-;; Robe Mode
-(require 'robe)
-(add-hook 'enh-ruby-mode-hook 'robe-mode)
-
-;; Rubocop
-(require 'rubocop)
-(add-hook 'enh-ruby-mode-hook #'rubocop-mode)
-
-;; If RVM is installed then
-(when *rvm-installed*
-  (require 'rvm)
+(use-package rvm
+  :if (eq *rvm-installed* t)
+  :after inf-ruby
+  :config
   (advice-add 'inf-ruby-console-auto :before #'rvm-activate-corresponding-ruby))
+
+(use-package robe
+  :hook ((ruby-mode    . robe-mode)
+         (ruby-ts-mode . robe-mode))
+  :config
+  ;; (eval-after-load 'company
+  ;;   '(push 'company-robe company-backends))
+  )
+
+(use-package bundler
+  :after ruby-mode)
+
+(use-package rspec-mode
+  ;; :diminish rspec-mode
+  :hook ruby-mode
+  :config
+  (setq rspec-use-rake-when-possible nil))
+
+(use-package yari
+  :after ruby-mode
+  :bind (:map ruby-mode-map
+              ("C-c k" . yari)))
+
+(use-package rubocop
+  :hook ((ruby-mode    . rubocop-mode)
+         (ruby-ts-mode . rubocop-mode)))
 
 (provide 'init-ruby)
 ;;; init-ruby.el ends here

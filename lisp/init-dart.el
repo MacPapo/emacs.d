@@ -1,23 +1,19 @@
 ;;; init-dart.el --- Dart Configuration ;; -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;;; Code:
-(require 'dart-mode)
-(require 'dart-server)
-(require 'flutter)
 
-;; Flutter config
-(setq flutter-sdk-path "~/FlutterDev/flutter/")
-(global-set-key (kbd "C-M-x") #'flutter-run-or-hot-reload)
+(use-package dart-mode)
+(use-package dart-server
+  :bind (:map dart-mode-map
+              ("C-c C-o" . dart-server-format))
+  :config
+  (setq dart-server-enable-analysis-server t))
 
-;; Flutter Hooks
-(add-hook 'dart-mode-hook #'flutter-test-mode)
-
-;; Dart config
-(with-eval-after-load "dart-mode"
-  (define-key dart-mode-map (kbd "C-c C-o") 'dart-server-format))
-
-;; Dart Server config
-(setq dart-server-enable-analysis-server t)
+(use-package flutter
+  :hook dart-mode
+  :bind ("C-M-x" . flutter-run-or-hot-reload)
+  :config
+  (setq flutter-sdk-path "~/FlutterDev/flutter/"))
 
 (provide 'init-dart)
 ;;; init-dart.el ends here
