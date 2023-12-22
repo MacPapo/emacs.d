@@ -4,7 +4,7 @@
 
 (use-package projectile
   :bind (:map projectile-mode-map
-	      ("C-c p" . projectile-command-map))
+              ("C-c p" . projectile-command-map))
   :config
   (setq projectile-per-project-compilation-buffer t
         projectile-mode-line-function '(lambda ()

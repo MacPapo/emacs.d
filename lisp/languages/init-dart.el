@@ -2,16 +2,18 @@
 ;;; Commentary:
 ;;; Code:
 
-(use-package dart-mode)
-(use-package dart-server
+(use-package dart-mode
+  :mode "\\.dart\\'"
   :bind (:map dart-mode-map
-              ("C-c C-o" . dart-server-format))
-  :config
-  (setq dart-server-enable-analysis-server t))
+              ("C-c C-o" . dart-server-format)
+              ("C-M-x"   . flutter-run-or-hot-reload)))
+
+(use-package dart-server
+  :after dart-mode
+  :hook (dart-server . flycheck-mode))
 
 (use-package flutter
-  :hook dart-mode
-  :bind ("C-M-x" . flutter-run-or-hot-reload)
+  :after dart-mode
   :config
   (setq flutter-sdk-path "~/FlutterDev/flutter/"))
 

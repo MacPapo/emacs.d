@@ -1,0 +1,737 @@
+#+title: GNU Emacs Configuration
+#+author: jacopo Costantini
+#+language: en
+#+options: ':t toc:nil author:t num:t
+#+startup: content indent
+
+* Early Init
+
+#+begin_src elisp :tangle ~/.emacs.d/early-init.el
+  ;;; early-init.el --- Emacs Minimal Config ;; -*- lexical-binding: t; -*-
+
+  ;;; Commentary:
+
+  ;;; Code:
+  (defconst *is-a-mac* (eq system-type 'darwin))
+  (defconst *rvm-installed* (and (file-directory-p "~/.rvm")
+                                 (file-executable-p "~/.rvm/bin/rvm")))
+
+  (setq package-enable-at-startup nil)
+
+  ;; PERF: A second, case-insensitive pass over `auto-mode-alist' is time wasted.
+  (setq auto-mode-case-fold nil)
+
+  ;; PERF: Disable bidirectional text scanning for a modest performance boost.
+  ;;   I've set this to `nil' in the past, but the `bidi-display-reordering's docs
+  ;;   say that is an undefined state and suggest this to be just as good:
+  (setq-default bidi-display-reordering 'left-to-right
+                bidi-paragraph-direction 'left-to-right)
+
+  ;; PERF: Disabling BPA makes redisplay faster, but might produce incorrect
+  ;;   reordering of bidirectional text with embedded parentheses (and other
+  ;;   bracket characters whose 'paired-bracket' Unicode property is non-nil).
+  (setq bidi-inhibit-bpa t)  ; Emacs 27+ only
+
+  ;; Reduce rendering/line scan work for Emacs by not rendering cursors or regions
+  ;; in non-focused windows.
+  (setq-default cursor-in-non-selected-windows nil)
+  (setq highlight-nonselected-windows nil)
+
+  ;; More performant rapid scrolling over unfontified regions. May cause brief
+  ;; spells of inaccurate syntax highlighting right after scrolling, which should
+  ;; quickly self-correct.
+  (setq fast-but-imprecise-scrolling t)
+
+  ;; Don't ping things that look like domain names.
+  (setq ffap-machine-p-known 'reject)
+
+  ;; Emacs "updates" its ui more often than it needs to, so slow it down slightly
+  (setq idle-update-delay 1.0)  ; default is 0.5
+
+  ;; Font compacting can be terribly expensive, especially for rendering icon
+  ;; fonts on Windows. Whether disabling it has a notable affect on Linux and Mac
+  ;; hasn't been determined, but do it anyway, just in case. This increases memory
+  ;; usage, however!
+  (setq inhibit-compacting-font-caches t)
+
+  ;; Increase how much is read from processes in a single chunk (default is 4kb).
+  ;; This is further increased elsewhere, where needed (like our LSP module).
+  (setq read-process-output-max (* 2 1024 1024)) ; 2 MiB
+
+  ;; Introduced in Emacs HEAD (b2f8c9f), this inhibits fontification while
+  ;; receiving input, which should help a little with scrolling performance.
+  (setq redisplay-skip-fontification-on-input t)
+
+  ;;; Disable UI elements early
+  ;; PERF,UI: Doom strives to be keyboard-centric, so I consider these UI elements
+  ;;   clutter. Initializing them also costs a morsel of startup time. Whats more,
+  ;;   the menu bar exposes functionality that Doom doesn't endorse. Perhaps one
+  ;;   day Doom will support these, but today is not that day.
+  ;;
+  ;; HACK: I intentionally avoid calling `menu-bar-mode', `tool-bar-mode', and
+  ;;   `scroll-bar-mode' because they do extra work to manipulate frame variables
+  ;;   that isn't necessary this early in the startup process.
+  (push '(menu-bar-lines . 0)   default-frame-alist)
+  (push '(tool-bar-lines . 0)   default-frame-alist)
+  (push '(vertical-scroll-bars) default-frame-alist)
+
+  ;; And set these to nil so users don't have to toggle the modes twice to
+  ;; reactivate them.
+  (setq menu-bar-mode nil
+        tool-bar-mode nil
+        scroll-bar-mode nil)
+
+  ;; FIX: On MacOS, disabling the menu bar makes MacOS treat Emacs as a
+  ;;   non-application window -- which means it doesn't automatically capture
+  ;;   focus when it is started, among other things, so enable the menu-bar for
+  ;;   GUI frames, but keep it disabled in terminal frames because there it
+  ;;   activates an ugly, in-frame menu bar.
+  (when *is-a-mac*
+    (add-hook 'window-setup-hook 'doom-restore-menu-bar-in-gui-frames-h)
+    (add-hook 'after-make-frame-functions 'doom-restore-menu-bar-in-gui-frames-h)
+    (defun doom-restore-menu-bar-in-gui-frames-h (&optional frame)
+      (let ((use-frame (or frame (selected-frame))))
+        (when (display-graphic-p use-frame)
+          (set-frame-parameter use-frame 'menu-bar-lines 1)))))
+
+  (setq frame-resize-pixelwise t
+        frame-inhibit-implied-resize t
+        frame-title-format '("%b")
+        ring-bell-function 'ignore
+        use-dialog-box t ; only for mouse events, which I seldom use
+        use-file-dialog nil
+        use-short-answers t
+        inhibit-splash-screen t
+        inhibit-startup-screen t
+        inhibit-x-resources t
+        inhibit-startup-echo-area-message user-login-name ; read the docstring
+        inhibit-startup-buffer-menu t)
+
+  (setq default-input-method nil)
+  (global-so-long-mode 1)
+
+  (define-advice load-file (:override (file) silence)
+    (load file nil 'nomessage))
+
+  (setq window-resize-pixelwise t
+        initial-scratch-message ";; Happy Hacking\n\n")
+
+  ;; Reduce the frequency of garbage collection
+  (setq gc-cons-threshold (* 1024 1024 80))
+
+  (add-hook 'after-init-hook
+            (lambda ()
+              ;; Restore after startup
+              (setq gc-cons-threshold 800000)
+              (setq gc-cons-percentage 0.1)))
+
+  (provide 'early-init)
+  ;;; early-init.el ends here
+#+end_src
+
+* Init
+
+#+begin_src elisp :tangle ~/.emacs.d/init.el
+  ;;; init.el --- Emacs Minimal Config ;; -*- lexical-binding: t; -*-
+
+  ;;; Commentary:
+
+  ;;; Code:
+
+  (require 'package)
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+  (package-initialize)
+
+  (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+
+  ;; Bootstrap `use-package`
+  (unless (package-installed-p 'use-package)
+    (package-refresh-contents)
+    (package-install 'use-package))
+  (eval-when-compile
+    (require 'use-package))
+  (setq use-package-always-ensure t
+        use-package-always-defer t)
+
+  ;; Set up custom file
+  (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+  (when (file-exists-p custom-file)
+    (load custom-file))
+
+  ;; Completions
+  (require 'init-ido)
+  (require 'init-company)
+
+  ;; UI & UX
+  (require 'init-defaults)
+  (require 'init-themes)
+
+  ;; Projects related
+  (require 'init-projectile)
+  (require 'init-git)
+
+  ;; Org stuff
+  (require 'init-org)
+
+  ;; LANGS
+  (require 'init-langs)
+  
+  ;; MISC
+  (require 'init-misc)
+
+  (provide 'init)
+  ;;; init.el ends here
+#+end_src
+
+** IDO
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-ido.el
+  ;;; init-ido.el --- Ido Configuration ;; -*- lexical-binding: t; -*-
+
+  ;;; Commentary:
+
+  ;;; Code:
+
+  (use-package ido
+    :config
+    (setq ido-everywhere t
+          ido-virtual-buffers t
+          ido-use-virtual-buffers t
+          ido-max-prospects 10
+          ido-use-faces t
+          ido-create-new-buffer 'always
+          ido-default-file-method 'selected-window
+          ido-default-buffer-method 'selected-window
+          ido-ignore-buffers '("\\` " "^\*Mess" "^\*Back" ".*Completion" "^\*Ido")
+          ido-enable-flex-matching t)
+    (ido-mode))
+
+  (use-package ido-completing-read+
+    :after ido
+    :config
+    (ido-ubiquitous-mode 1))
+
+  ;; Smex
+  (use-package smex
+    :bind (("M-x" . smex)
+           ("M-X" . smex-major-mode-commands)
+           ;; This is your old M-x.
+           ("C-c C-c M-x" . execute-extended-command)))
+
+  (provide 'init-ido)
+  ;;; init-ido.el ends here
+#+end_src
+
+** Company
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-company.el
+  ;;; init-company.el --- Company Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package company
+    :demand t
+    :config
+    (setq company-tooltip-align-annotations t
+          company-selection-wrap-around t
+          company-lighter-base "©"
+          company-tooltip-limit 10
+          company-idle-delay 0.1
+          ;; company-minimum-prefix-length 2
+          ;; company-require-match 'never
+          ;; company-format-margin-function 'company-text-icons-margin
+          company-tooltip-minimum 4
+          ;; company-text-face-extra-attributes '(:weight bold :slant italic)
+          company-text-icons-add-background t
+          ;; company-dabbrev-other-buffers nil
+          ;; company-dabbrev-ignore-case nil
+          ;; company-dabbrev-downcase nil
+          company-tooltip-flip-when-above t
+          ;; company-show-quick-access 'left
+          ;; company-backends '(company-capf)
+          company-frontends '(company-pseudo-tooltip-frontend
+                              company-echo-metadata-frontend)
+          company-files-exclusions '(".git/" ".DS_Store")
+          company-transformers '(delete-consecutive-dups
+                                 company-sort-by-occurrence)
+          company-global-modes '(not erc-mode message-mode help-mode))
+    (global-company-mode +1))
+
+  (use-package company-prescient
+    :after company
+    :config
+    (company-prescient-mode +1))
+
+  (provide 'init-company)
+  ;;; init-company.el ends here
+#+end_src
+
+** Defaults
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-defaults.el
+  ;;; init-defaults.el --- Better Emacs Defaults ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package emacs
+    :ensure nil
+    :demand t
+    :config
+    (prefer-coding-system 'utf-8)
+    (set-default-coding-systems 'utf-8)
+    (set-terminal-coding-system 'utf-8)
+    (set-keyboard-coding-system 'utf-8)
+
+    (electric-pair-mode +1)
+    (show-paren-mode +1)
+    (global-hl-line-mode +1)
+    (delete-selection-mode +1)
+    (subword-mode +1)
+    (save-place-mode +1)
+
+    (setq display-time-day-and-date t
+          display-time-24hr-format  t
+          display-time-default-load-average nil)
+    (display-time-mode +1)
+
+    (setq global-auto-revert-non-file-buffers t
+          auto-revert-verbose nil
+          auto-revert-use-notify nil)
+    (global-auto-revert-mode +1)
+
+    (setq-default
+     line-number-mode t
+     column-number-mode t
+     size-indication-mode t
+     fill-column 80
+     blink-cursor-interval 0.4
+     bookmark-default-file (locate-user-emacs-file ".bookmarks.el")
+     buffers-menu-max-size 30
+     case-fold-search t
+     load-prefer-newer t
+     ediff-split-window-function 'split-window-horizontally
+     ediff-window-setup-function 'ediff-setup-windows-plain
+     indent-tabs-mode nil
+     auto-save-default nil
+     mouse-yank-at-point t
+     read-buffer-completion-ignore-case t
+     read-file-name-completion-ignore-case t
+     save-interprogram-paste-before-kill t
+     scroll-preserve-screen-position 'always
+     set-mark-command-repeat-pop t
+     tooltip-delay 1.5
+     truncate-lines nil
+     visible-bell t
+     kill-do-not-save-duplicates t
+     echo-keystrokes 0.02
+     truncate-partial-width-windows nil)
+
+    ;; Make native compilation silent and prune its cache.
+    (when (native-comp-available-p)
+      (setq native-comp-async-report-warnings-errors 'silent) ; Emacs 28 with native compilation
+      (setq native-compile-prune-cache t)) ; Emacs 29
+
+    (setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backups"))))
+    ;; (setq auto-save-file-name-transforms
+    ;;     `((".*" ,(concat user-emacs-directory "backups/") t)))
+
+    (setq x-selection-timeout 100
+          select-enable-clipboard t
+          x-select-enable-clipboard-manager nil)
+
+    ;; (setq scroll-margin 1
+    ;;       scroll-conservatively 10000
+    ;;       scroll-preserve-screen-position 1)
+
+    ;; EMACS C
+    (setq auto-hscroll-mode 'current-line
+          auto-save-interval 64
+          auto-save-timeout 2
+          enable-recursive-minibuffers t
+          history-delete-duplicates t
+          history-length 200)
+
+    (setq backup-by-copying t
+          delete-old-versions t
+          version-control t
+          compilation-scroll-output 'first-error
+          create-lockfiles nil
+          redisplay-dont-pause t
+          confirm-kill-emacs 'y-or-n-p
+          undo-limit 800000
+          max-lisp-eval-depth 10000
+          x-stretch-cursor t)
+
+    ;; enable features
+    (mapc (lambda (x) (put x 'disabled nil))
+          '(erase-buffer upcase-region downcase-region dired-find-alternate-file narrow-to-region)))
+
+  (use-package savehist
+    :ensure nil
+    :config
+    (setq savehist-additional-variables '(search-ring regexp-search-ring))
+    (setq savehist-autosave-interval 60)
+    (savehist-mode +1))
+
+  (use-package recentf
+    :ensure nil
+    :config
+    (setq recentf-max-saved-items 600
+          recentf-exclude '("COMMIT_MSG" "COMMIT_EDITMSG" "github.*txt$"
+                            "[0-9a-f]\\{32\\}-[0-9a-f]\\{32\\}\\.org"
+                            ".*png$" ".*cache$"))
+    (recentf-mode 1))
+
+  (use-package eldoc
+    :ensure nil
+    :config
+    (remove-hook 'after-change-major-mode-hook
+                 'global-eldoc-mode-enable-in-buffers)
+    (global-eldoc-mode -1))
+
+  (use-package winner
+    :ensure nil
+    :bind (("M-N" . winner-redo)
+           ("M-P" . winner-undo))
+    :config
+    (remove-hook 'minibuffer-setup-hook 'winner-save-unconditionally)
+    (winner-mode 1))
+
+  (use-package uniquify
+    :ensure nil
+    :config
+    (setq uniquify-buffer-name-style 'forward
+          uniquify-separator "/"
+          uniquify-ignore-buffers-re "^\\*"))
+
+  (use-package display-line-numbers
+    :ensure nil
+    :hook prog-mode
+    :config
+    (setq-default display-line-numbers-width 3))
+
+  (use-package display-fill-column-indicator
+      :ensure nil
+      :hook prog-mode
+      :config
+      (setq-default
+       indicate-buffer-boundaries 'left
+       display-fill-column-indicator-character ?\u254e))
+
+  (use-package dired
+    :ensure nil
+    :config
+    (setq dired-listing-switches "-laGh1v"
+          list-directory-brief-switches "-CFh"
+          list-directory-verbose-switches "-lhG"
+          dired-recursive-deletes 'always
+          dired-recursive-copies 'always
+          dired-dwim-target t))
+
+  (use-package mac-config
+    :ensure nil
+    :if (eq *is-a-mac* t)
+    :config
+    (setq ns-alternate-modifier 'alt
+          ns-command-modifier 'meta
+          ns-function-modifier 'hyper
+          ns-right-alternate-modifier 'alt)
+
+    ;; Settings for the Emacs Mac-port
+    (setq mac-command-modifier 'meta
+          mac-option-modifier 'alt
+          mac-pass-command-to-system nil))
+
+  (use-package isearch
+    :ensure nil
+    :config
+    (setq isearch-repeat-on-direction-change t
+          isearch-wrap-pause nil
+          isearch-lazy-count t
+          lazy-count-prefix-format "[%s of %s] "
+          isearch-forward-thing-at-point '(region url email symbol sexp)
+          isearch-allow-prefix t))
+
+  (use-package multiple-cursors
+    :bind (("C->" . mc/mark-next-like-this)
+           ("C-<" . mc/mark-previous-like-this)
+           ("C-c C-<" . mc/mark-all-like-this)))
+
+  (use-package avy
+    :bind ("C-j" . avy-goto-char-timer)
+    :config
+    (setq avy-timeout-seconds 0.25))
+
+  (use-package ace-window
+    :bind ("M-o" . ace-window)
+    :config
+    (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
+
+  (use-package ibuffer
+    :ensure nil
+    :bind (("C-x C-b" . ibuffer)))
+
+  (use-package expand-region
+    :bind ("C-=" . er/expand-region))
+
+  (use-package which-key
+    :config
+    (which-key-mode))
+
+  (use-package crux
+    :bind (
+           ("C-o" . crux-smart-open-line)
+           ("C-S-o" . crux-smart-open-line-above)
+           ("C-k" . crux-smart-kill-line)
+           ("C-<backspace>". crux-kill-line-backwards)
+           ("M-<down>" . crux-duplicate-current-line-or-region)
+           ("M-S-<down>" . crux-duplicate-and-comment-current-line-or-region)
+           ("C-c K" . crux-kill-other-buffers)
+           ("M-j" . crux-top-join-line)
+
+           ([remap move-beginning-of-line] . crux-move-beginning-of-line)
+           ([remap kill-whole-line] . crux-kill-whole-line)))
+
+  (use-package rainbow-delimiters
+    :hook prog-mode
+    ;; :diminish rainbow-mode
+    )
+
+  ;; Smartparens
+  ;; (require 'smartparens-config)
+  ;; (setq show-paren-delay 0)
+  ;; (setq sp-highlight-pair-overlay nil)
+  ;; (add-hook 'prog-mode-hook #'smartparens-mode)
+  ;; (add-hook 'text-mode-hook #'smartparens-mode)
+
+  ;; Yasnippet
+  ;; (require 'yasnippet)
+  ;; (yas-reload-all)
+  ;; (add-hook 'prog-mode-hook #'yas-minor-mode)
+
+  (provide 'init-defaults)
+  ;;; init-defaults.el ends here
+#+end_src
+
+** Themes
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-themes.el
+  ;;; init-themes.el --- Theme Config ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package modus-themes)
+  (use-package base16-theme)
+
+  (load-theme 'base16-ashes t)
+
+  (set-face-attribute 'default nil :font "Iosevka" :height 110)
+
+  (provide 'init-themes)
+  ;;; init-themes.el ends here
+#+end_src
+
+** Projectile
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-projectile.el
+  ;;; init-projectile.el --- Projectile Packages ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package projectile
+    :bind (:map projectile-mode-map
+                ("C-c p" . projectile-command-map))
+    :config
+    (setq projectile-per-project-compilation-buffer t
+          projectile-mode-line-function '(lambda ()
+                                           (format " Proj[%s]"
+                                                   (projectile-project-name))))
+    :init
+    (projectile-mode +1))
+
+  (provide 'init-projectile)
+  ;;; init-projectile.el ends here
+#+end_src
+
+** Git
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-git.el
+  ;;; init-git.el --- Git Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package magit
+    :config
+    (setq magit-completing-read-function #'magit-ido-completing-read))
+
+  (provide 'init-git)
+  ;;; init-git.el ends here
+#+end_src
+
+** Org
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-org.el
+  ;;; init-org.el --- Org Configuration ;; -*- lexical-binding: t; -*-
+
+  ;;; Commentary:
+
+  ;;; Code:
+
+  (require 'org)
+  (setq org-completion-use-ido t
+        org-outline-path-complete-in-steps nil)
+
+  (use-package org-pomodoro)
+
+  (provide 'init-org)
+  ;;; init-org.el ends here
+#+end_src
+
+** Languages
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-langs.el
+  ;;; init-langs.el --- Programming Languages Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+  (add-to-list 'load-path (expand-file-name "lisp/languages" user-emacs-directory))
+
+  (require 'init-ruby)
+  (require 'init-dart)
+  (require 'init-sql)
+
+  (provide 'init-langs)
+  ;;; init-langs.el ends here
+#+end_src
+
+*** Ruby
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/languages/init-ruby.el
+  ;;; init-ruby.el --- Ruby Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package inf-ruby
+    :hook ((ruby-mode    . inf-ruby-minor-mode)
+           (ruby-ts-mode . inf-ruby-minor-mode)))
+
+  (use-package rvm
+    :if (eq *rvm-installed* t)
+    :after inf-ruby
+    :config
+    (advice-add 'inf-ruby-console-auto :before #'rvm-activate-corresponding-ruby))
+
+  (use-package robe
+    :hook ((ruby-mode    . robe-mode)
+           (ruby-ts-mode . robe-mode))
+    :config
+    ;; (eval-after-load 'company
+    ;;   '(push 'company-robe company-backends))
+    )
+
+  (use-package bundler
+    :after ruby-mode)
+
+  (use-package rspec-mode
+    ;; :diminish rspec-mode
+    :hook ruby-mode
+    :config
+    (setq rspec-use-rake-when-possible nil))
+
+  (use-package yari
+    :after ruby-mode
+    :bind (:map ruby-mode-map
+                ("C-c k" . yari)))
+
+  (use-package rubocop
+    :hook ((ruby-mode    . rubocop-mode)
+           (ruby-ts-mode . rubocop-mode)))
+
+  (provide 'init-ruby)
+  ;;; init-ruby.el ends here
+#+end_src
+
+*** Dart
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/languages/init-dart.el
+  ;;; init-dart.el --- Dart Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package dart-mode
+    :mode "\\.dart\\'"
+    :bind (:map dart-mode-map
+                ("C-c C-o" . dart-server-format)
+                ("C-M-x"   . flutter-run-or-hot-reload)))
+
+  (use-package dart-server
+    :after dart-mode
+    :hook (dart-server . flycheck-mode))
+
+  (use-package flutter
+    :after dart-mode
+    :config
+    (setq flutter-sdk-path "~/FlutterDev/flutter/"))
+
+  (provide 'init-dart)
+  ;;; init-dart.el ends here
+#+end_src
+
+*** Sql
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/languages/init-sql.el
+  ;;; init-sql.el --- Sql Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package sqlformat
+    :bind (:map sql-mode-map
+                ("C-c C-f" . sqlformat))
+    :hook (sql-mode . sqlformat-on-save-mode)
+    :config
+    (setq sqlformat-command 'pgformatter
+          sqlformat-args '("-s2" "-g")))
+
+  (use-package sqlup-mode
+    :bind (:map sql-mode-map
+                ("C-c u" . sqlup-capitalize-keywords-in-region))
+    :hook ((sql-mode . sqlup-mode)
+           ;; Capitalize keywords in an interactive session (e.g. psql)
+           (sql-interactive-mode . sqlup-mode))
+    :config
+    (add-to-list 'sqlup-blacklist "name"))
+
+  (provide 'init-sql)
+  ;;; init-sql.el ends here
+#+end_src
+
+
+** Miscellaneous
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-misc.el
+  ;;; init-misc.el --- Miscellaneous Packages Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+  (add-to-list 'load-path (expand-file-name "lisp/miscellaneous" user-emacs-directory))
+
+  (require 'init-docker)
+
+  (provide 'init-misc)
+  ;;; init-misc.el ends here
+#+end_src
+
+*** Docker
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/miscellaneous/init-docker.el
+  ;;; init-docker.el --- Better Emacs Docker ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package docker)
+  (use-package docker-compose-mode)
+  (use-package dockerfile-mode
+    :config
+    (put 'dockerfile-image-name 'safe-local-variable #'stringp))
+
+  (provide 'init-docker)
+  ;;; init-docker.el ends here
+#+end_src

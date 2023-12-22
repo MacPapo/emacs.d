@@ -7,15 +7,15 @@
 (use-package ido
   :config
   (setq ido-everywhere t
-	ido-virtual-buffers t
+        ido-virtual-buffers t
         ido-use-virtual-buffers t
         ido-max-prospects 10
-	ido-use-faces t
+        ido-use-faces t
         ido-create-new-buffer 'always
-	ido-default-file-method 'selected-window
-	ido-default-buffer-method 'selected-window
+        ido-default-file-method 'selected-window
+        ido-default-buffer-method 'selected-window
         ido-ignore-buffers '("\\` " "^\*Mess" "^\*Back" ".*Completion" "^\*Ido")
-	ido-enable-flex-matching t)
+        ido-enable-flex-matching t)
   (ido-mode))
 
 (use-package ido-completing-read+

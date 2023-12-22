@@ -18,7 +18,6 @@
   (require 'use-package))
 (setq use-package-always-ensure t
       use-package-always-defer t)
-(use-package use-package-ensure-system-package)
 
 ;; Set up custom file
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
@@ -41,12 +40,10 @@
 (require 'init-org)
 
 ;; LANGS
-(require 'init-ruby)
-(require 'init-dart)
-(require 'init-sql)
+(require 'init-langs)
 
 ;; MISC
-(require 'init-docker)
+(require 'init-misc)
 
 (provide 'init)
 ;;; init.el ends here

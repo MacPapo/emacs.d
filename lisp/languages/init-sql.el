@@ -3,10 +3,9 @@
 ;;; Code:
 
 (use-package sqlformat
-  :ensure-system-package pgFormat
   :bind (:map sql-mode-map
               ("C-c C-f" . sqlformat))
-  :hook (sql-mode-hook . sqlformat-on-save-mode)
+  :hook (sql-mode . sqlformat-on-save-mode)
   :config
   (setq sqlformat-command 'pgformatter
         sqlformat-args '("-s2" "-g")))

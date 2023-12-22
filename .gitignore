@@ -19,3 +19,4 @@
 /projectile-bookmarks.eld
 /lisp/*.elc
 /.mc-lists.el
+/.bookmarks.el

@@ -22,10 +22,10 @@
         display-time-24hr-format  t
         display-time-default-load-average nil)
   (display-time-mode +1)
-  
+
   (setq global-auto-revert-non-file-buffers t
-	auto-revert-verbose nil
-	auto-revert-use-notify nil)
+        auto-revert-verbose nil
+        auto-revert-use-notify nil)
   (global-auto-revert-mode +1)
 
   (setq-default
@@ -51,10 +51,14 @@
    tooltip-delay 1.5
    truncate-lines nil
    visible-bell t
-   use-short-answers t
    kill-do-not-save-duplicates t
    echo-keystrokes 0.02
    truncate-partial-width-windows nil)
+
+  ;; Make native compilation silent and prune its cache.
+  (when (native-comp-available-p)
+    (setq native-comp-async-report-warnings-errors 'silent) ; Emacs 28 with native compilation
+    (setq native-compile-prune-cache t)) ; Emacs 29
 
   (setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backups"))))
   ;; (setq auto-save-file-name-transforms
@@ -70,26 +74,26 @@
 
   ;; EMACS C
   (setq auto-hscroll-mode 'current-line
-	auto-save-interval 64
-	auto-save-timeout 2
-	enable-recursive-minibuffers t
-	history-delete-duplicates t
-	history-length 200)
+        auto-save-interval 64
+        auto-save-timeout 2
+        enable-recursive-minibuffers t
+        history-delete-duplicates t
+        history-length 200)
 
   (setq backup-by-copying t
-	delete-old-versions t
-	version-control t
+        delete-old-versions t
+        version-control t
         compilation-scroll-output 'first-error
-	create-lockfiles nil
-	redisplay-dont-pause t
+        create-lockfiles nil
+        redisplay-dont-pause t
         confirm-kill-emacs 'y-or-n-p
-	undo-limit 800000
+        undo-limit 800000
         max-lisp-eval-depth 10000
-	x-stretch-cursor t)
+        x-stretch-cursor t)
 
   ;; enable features
   (mapc (lambda (x) (put x 'disabled nil))
-	'(erase-buffer upcase-region downcase-region dired-find-alternate-file narrow-to-region)))
+        '(erase-buffer upcase-region downcase-region dired-find-alternate-file narrow-to-region)))
 
 (use-package savehist
   :ensure nil
@@ -102,7 +106,7 @@
   :ensure nil
   :config
   (setq recentf-max-saved-items 600
-	recentf-exclude '("COMMIT_MSG" "COMMIT_EDITMSG" "github.*txt$"
+        recentf-exclude '("COMMIT_MSG" "COMMIT_EDITMSG" "github.*txt$"
                           "[0-9a-f]\\{32\\}-[0-9a-f]\\{32\\}\\.org"
                           ".*png$" ".*cache$"))
   (recentf-mode 1))
@@ -111,13 +115,13 @@
   :ensure nil
   :config
   (remove-hook 'after-change-major-mode-hook
-	       'global-eldoc-mode-enable-in-buffers)
+               'global-eldoc-mode-enable-in-buffers)
   (global-eldoc-mode -1))
 
 (use-package winner
   :ensure nil
   :bind (("M-N" . winner-redo)
-	 ("M-P" . winner-undo))
+         ("M-P" . winner-undo))
   :config
   (remove-hook 'minibuffer-setup-hook 'winner-save-unconditionally)
   (winner-mode 1))
@@ -126,8 +130,8 @@
   :ensure nil
   :config
   (setq uniquify-buffer-name-style 'forward
-	uniquify-separator "/"
-	uniquify-ignore-buffers-re "^\\*"))
+        uniquify-separator "/"
+        uniquify-ignore-buffers-re "^\\*"))
 
 (use-package display-line-numbers
   :ensure nil
@@ -147,8 +151,8 @@
   :ensure nil
   :config
   (setq dired-listing-switches "-laGh1v"
-	list-directory-brief-switches "-CFh"
-	list-directory-verbose-switches "-lhG"
+        list-directory-brief-switches "-CFh"
+        list-directory-verbose-switches "-lhG"
         dired-recursive-deletes 'always
         dired-recursive-copies 'always
         dired-dwim-target t))
@@ -158,29 +162,29 @@
   :if (eq *is-a-mac* t)
   :config
   (setq ns-alternate-modifier 'alt
-	ns-command-modifier 'meta
-	ns-function-modifier 'hyper
-	ns-right-alternate-modifier 'alt)
+        ns-command-modifier 'meta
+        ns-function-modifier 'hyper
+        ns-right-alternate-modifier 'alt)
 
   ;; Settings for the Emacs Mac-port
   (setq mac-command-modifier 'meta
-	mac-option-modifier 'alt
-	mac-pass-command-to-system nil))
+        mac-option-modifier 'alt
+        mac-pass-command-to-system nil))
 
 (use-package isearch
   :ensure nil
   :config
   (setq isearch-repeat-on-direction-change t
-	isearch-wrap-pause nil
-	isearch-lazy-count t
-	lazy-count-prefix-format "[%s of %s] "
-	isearch-forward-thing-at-point '(region url email symbol sexp)
-	isearch-allow-prefix t))
+        isearch-wrap-pause nil
+        isearch-lazy-count t
+        lazy-count-prefix-format "[%s of %s] "
+        isearch-forward-thing-at-point '(region url email symbol sexp)
+        isearch-allow-prefix t))
 
 (use-package multiple-cursors
   :bind (("C->" . mc/mark-next-like-this)
-	 ("C-<" . mc/mark-previous-like-this)
-	 ("C-c C-<" . mc/mark-all-like-this)))
+         ("C-<" . mc/mark-previous-like-this)
+         ("C-c C-<" . mc/mark-all-like-this)))
 
 (use-package avy
   :bind ("C-j" . avy-goto-char-timer)
@@ -205,13 +209,13 @@
 
 (use-package crux
   :bind (
-	 ("C-o" . crux-smart-open-line)
-	 ("C-S-o" . crux-smart-open-line-above)
-	 ("C-k" . crux-smart-kill-line)
-	 ("C-<backspace>". crux-kill-line-backwards)
-	 ("M-<down>" . crux-duplicate-current-line-or-region)
-	 ("M-S-<down>" . crux-duplicate-and-comment-current-line-or-region)
-	 ("C-c K" . crux-kill-other-buffers)
+         ("C-o" . crux-smart-open-line)
+         ("C-S-o" . crux-smart-open-line-above)
+         ("C-k" . crux-smart-kill-line)
+         ("C-<backspace>". crux-kill-line-backwards)
+         ("M-<down>" . crux-duplicate-current-line-or-region)
+         ("M-S-<down>" . crux-duplicate-and-comment-current-line-or-region)
+         ("C-c K" . crux-kill-other-buffers)
          ("M-j" . crux-top-join-line)
 
          ([remap move-beginning-of-line] . crux-move-beginning-of-line)
