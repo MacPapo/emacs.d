@@ -11,6 +11,9 @@
   (set-terminal-coding-system 'utf-8)
   (set-keyboard-coding-system 'utf-8)
 
+  (setq user-full-name    "Jacopo Costantini"
+        user-mail-address "jacopocostantini32@gmail.com")
+
   (electric-pair-mode +1)
   (show-paren-mode +1)
   (global-hl-line-mode +1)
@@ -204,6 +207,7 @@
   :bind ("C-=" . er/expand-region))
 
 (use-package which-key
+  :demand t
   :config
   (which-key-mode))
 

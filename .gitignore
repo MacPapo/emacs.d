@@ -20,3 +20,4 @@
 /lisp/*.elc
 /.mc-lists.el
 /.bookmarks.el
+*.data

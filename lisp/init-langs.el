@@ -5,6 +5,8 @@
 
 (require 'init-ruby)
 (require 'init-dart)
+(require 'init-data)
+(require 'init-lisp)
 (require 'init-sql)
 
 (provide 'init-langs)

@@ -157,7 +157,7 @@
   (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
   (when (file-exists-p custom-file)
     (load custom-file))
-
+  
   ;; Completions
   (require 'init-ido)
   (require 'init-company)
@@ -175,7 +175,7 @@
 
   ;; LANGS
   (require 'init-langs)
-  
+
   ;; MISC
   (require 'init-misc)
 
@@ -281,7 +281,7 @@
     (set-default-coding-systems 'utf-8)
     (set-terminal-coding-system 'utf-8)
     (set-keyboard-coding-system 'utf-8)
-
+    
     (electric-pair-mode +1)
     (show-paren-mode +1)
     (global-hl-line-mode +1)
@@ -475,6 +475,7 @@
     :bind ("C-=" . er/expand-region))
 
   (use-package which-key
+    :demand t
     :config
     (which-key-mode))
 
@@ -597,6 +598,8 @@
 
   (require 'init-ruby)
   (require 'init-dart)
+  (require 'init-data)
+  (require 'init-lisp)
   (require 'init-sql)
 
   (provide 'init-langs)
@@ -676,6 +679,73 @@
   ;;; init-dart.el ends here
 #+end_src
 
+*** Data
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/languages/init-data.el
+  ;;; init-data.el --- Data Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package csv-mode
+    :hook (csv-mode . csv-guess-set-separator))
+
+  (provide 'init-data)
+  ;;; init-data.el ends here
+#+end_src
+
+*** Lisp
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/languages/init-lisp.el
+  ;;; init-lisp.el --- Lisp Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+
+  ;; Paredit Cheat Sheet
+
+  ;; Navigation
+  ;; Go to the opening parenthesis: M-C-u (paredit-backward-up)
+  ;; Go to the closing parenthesis: M-C-d (paredit-forward-down)
+
+  ;; Parentheses and Quotes Manipulation
+  ;; Insert balanced parentheses: M-( (paredit-wrap-round)
+  ;; Slurp a parenthesis forward: C-) (paredit-forward-slurp-sexp)
+  ;; Slurp a parenthesis backward: C-( (paredit-backward-slurp-sexp)
+  ;; Barf a parenthesis forward: C-} (paredit-forward-barf-sexp)
+  ;; Barf a parenthesis backward: C-{ (paredit-backward-barf-sexp)
+  ;; Surround with quotes: M-\" (paredit-meta-doublequote)
+
+  ;; Deletion and Killing
+  ;; Delete a character forward: C-d (paredit-forward-delete)
+  ;; Delete a character backward: DEL (paredit-backward-delete)
+  ;; Kill a line (keeping parentheses balanced): C-k (paredit-kill)
+
+  ;; Splitting and Joining
+  ;; Split an s-expression: M-S (paredit-split-sexp)
+  ;; Join two s-expressions: M-J (paredit-join-sexps)
+  (use-package paredit
+    :hook ((emacs-lisp-mode lisp-mode lisp-interaction-mode scheme-mode) . paredit-mode))
+
+  (use-package elisp-slime-nav
+    :hook ((emacs-lisp-mode . turn-on-elisp-slime-nav-mode)
+           (ielm-mode       . turn-on-elisp-slime-nav-mode)))
+
+  (use-package slime
+    :commands slime
+    :config
+    ;; (setq inferior-lisp-program "/path/to/your/lisp-implementation") ; es. sbcl, clisp, ecc.
+    (setq slime-contribs '(slime-fancy slime-company)))
+
+  (use-package slime-company
+    :after (slime company)
+    :config
+    (setq slime-company-completion 'fuzzy
+          slime-company-after-completion 'slime-company-just-one-space))
+
+  (provide 'init-lisp)
+  ;;; init-lisp.el ends here
+#+end_src
+
 *** Sql
 
 #+begin_src elisp :tangle ~/.emacs.d/lisp/languages/init-sql.el
@@ -704,7 +774,6 @@
   ;;; init-sql.el ends here
 #+end_src
 
-
 ** Miscellaneous
 
 #+begin_src elisp :tangle ~/.emacs.d/lisp/init-misc.el
@@ -714,6 +783,7 @@
   (add-to-list 'load-path (expand-file-name "lisp/miscellaneous" user-emacs-directory))
 
   (require 'init-docker)
+  (require 'init-gnus)
 
   (provide 'init-misc)
   ;;; init-misc.el ends here
@@ -734,4 +804,37 @@
 
   (provide 'init-docker)
   ;;; init-docker.el ends here
+#+end_src
+
+*** Gnus
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/miscellaneous/init-gnus.el
+  ;;; init-gnus.el --- Better Emacs Gnus ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package gnus
+    :ensure nil
+    :bind (:map gnus-group-mode-map
+                ("o" . my-gnus-group-list-subscribed-groups))
+    :hook ((message-mode . (lambda ()
+                             (flyspell-mode t))))
+    :config
+    (setq gnus-article-sort-functions
+          '((not gnus-article-sort-by-date)
+            (not gnus-article-sort-by-number))
+          ;; Patch article
+          gnus-article-patch-conditions
+          '( "^@@ -[0-9]+,[0-9]+ \\+[0-9]+,[0-9]+ @@" )
+          ;; Specify the send mail function
+          send-mail-function         'smtpmail-send-it
+          message-send-mail-function 'smtpmail-send-it)
+
+    (defun my-gnus-group-list-subscribed-groups ()
+      "List all subscribed groups with or without un-read messages"
+      (interactive)
+      (gnus-group-list-all-groups 5)))
+
+  (provide 'init-gnus)
+  ;;; init-gnus.el ends here
 #+end_src
