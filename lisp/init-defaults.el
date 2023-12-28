@@ -11,9 +11,6 @@
   (set-terminal-coding-system 'utf-8)
   (set-keyboard-coding-system 'utf-8)
 
-  (setq user-full-name    "Jacopo Costantini"
-        user-mail-address "jacopocostantini32@gmail.com")
-
   (electric-pair-mode +1)
   (show-paren-mode +1)
   (global-hl-line-mode +1)
@@ -44,6 +41,7 @@
    ediff-split-window-function 'split-window-horizontally
    ediff-window-setup-function 'ediff-setup-windows-plain
    indent-tabs-mode nil
+   tab-width 4
    auto-save-default nil
    mouse-yank-at-point t
    read-buffer-completion-ignore-case t

@@ -26,6 +26,7 @@
 
 ;; Completions
 (require 'init-ido)
+(require 'init-evil)
 (require 'init-company)
 
 ;; UI & UX
