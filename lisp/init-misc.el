@@ -3,6 +3,7 @@
 ;;; Code:
 (add-to-list 'load-path (expand-file-name "lisp/miscellaneous" user-emacs-directory))
 
+(require 'init-yasnippet)
 (require 'init-docker)
 (require 'init-gnus)
 

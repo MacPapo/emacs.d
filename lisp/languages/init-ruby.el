@@ -2,15 +2,27 @@
 ;;; Commentary:
 ;;; Code:
 
+;; (use-package ruby-ts-mode
+;;   :ensure nil
+;;   :hook (ruby-ts-mode . subword-mode)
+;;   :mode "\\.rb\\'"
+;;   :mode "Rakefile\\'"
+;;   :mode "Gemfile\\'"
+;;   :mode "\\.ru\\'"
+;;   :custom
+;;   (ruby-indent-level 2)
+;;   (ruby-indent-tabs-mode nil))
+
 (use-package inf-ruby
   :hook ((ruby-mode    . inf-ruby-minor-mode)
          (ruby-ts-mode . inf-ruby-minor-mode)))
 
-(use-package rvm
-  :if (eq *rvm-installed* t)
-  :after inf-ruby
-  :config
-  (advice-add 'inf-ruby-console-auto :before #'rvm-activate-corresponding-ruby))
+(when *rvm-installed*
+  (use-package rvm
+    :demand t
+    :config
+    (message "CHIAMATO MI AI")
+    (advice-add 'inf-ruby-console-auto :before #'rvm-activate-corresponding-ruby)))
 
 (use-package robe
   :hook ((ruby-mode    . robe-mode)

@@ -21,3 +21,5 @@
 /.mc-lists.el
 /.bookmarks.el
 *.data
+*.last
+*.dylib

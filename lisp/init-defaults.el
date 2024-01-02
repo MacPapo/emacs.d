@@ -69,10 +69,6 @@
         select-enable-clipboard t
         x-select-enable-clipboard-manager nil)
 
-  ;; (setq scroll-margin 1
-  ;;       scroll-conservatively 10000
-  ;;       scroll-preserve-screen-position 1)
-
   ;; EMACS C
   (setq auto-hscroll-mode 'current-line
         auto-save-interval 64
@@ -92,9 +88,27 @@
         max-lisp-eval-depth 10000
         x-stretch-cursor t)
 
+  (when *is-a-mac*
+    (setq ns-alternate-modifier 'alt
+          ns-command-modifier 'meta
+          ns-function-modifier 'hyper
+          ns-right-alternate-modifier 'none)
+    ;; Settings for the Emacs Mac-port
+    (setq mac-command-modifier 'meta
+          mac-option-modifier 'alt
+          mac-pass-command-to-system nil))
+
+  ;; Select treesitter langs
+  (setq treesit-language-source-alist
+        '((ruby "https://github.com/tree-sitter/tree-sitter-ruby")))
+
   ;; enable features
   (mapc (lambda (x) (put x 'disabled nil))
         '(erase-buffer upcase-region downcase-region dired-find-alternate-file narrow-to-region)))
+
+(use-package sudo-edit)
+
+(use-package helpful)
 
 (use-package savehist
   :ensure nil
@@ -112,12 +126,7 @@
                           ".*png$" ".*cache$"))
   (recentf-mode 1))
 
-(use-package eldoc
-  :ensure nil
-  :config
-  (remove-hook 'after-change-major-mode-hook
-               'global-eldoc-mode-enable-in-buffers)
-  (global-eldoc-mode -1))
+(use-package buffer-move)
 
 (use-package winner
   :ensure nil
@@ -138,39 +147,30 @@
   :ensure nil
   :hook prog-mode
   :config
-  (setq-default display-line-numbers-width 3))
+  (setq-default
+   display-line-numbers-width 3
+   display-line-numbers 'relative
+   display-line-numbers-current-absolute t))
 
 (use-package display-fill-column-indicator
-    :ensure nil
-    :hook prog-mode
-    :config
-    (setq-default
-     indicate-buffer-boundaries 'left
-     display-fill-column-indicator-character ?\u254e))
+  :ensure nil
+  :hook prog-mode
+  :config
+  (setq-default
+   indicate-buffer-boundaries 'left
+   display-fill-column-indicator-character ?\u254e))
 
 (use-package dired
   :ensure nil
   :config
+  (when *is-a-mac* (setq insert-directory-program "gls"))
+
   (setq dired-listing-switches "-laGh1v"
         list-directory-brief-switches "-CFh"
         list-directory-verbose-switches "-lhG"
         dired-recursive-deletes 'always
         dired-recursive-copies 'always
         dired-dwim-target t))
-
-(use-package mac-config
-  :ensure nil
-  :if (eq *is-a-mac* t)
-  :config
-  (setq ns-alternate-modifier 'alt
-        ns-command-modifier 'meta
-        ns-function-modifier 'hyper
-        ns-right-alternate-modifier 'alt)
-
-  ;; Settings for the Emacs Mac-port
-  (setq mac-command-modifier 'meta
-        mac-option-modifier 'alt
-        mac-pass-command-to-system nil))
 
 (use-package isearch
   :ensure nil
@@ -234,11 +234,6 @@
 ;; (setq sp-highlight-pair-overlay nil)
 ;; (add-hook 'prog-mode-hook #'smartparens-mode)
 ;; (add-hook 'text-mode-hook #'smartparens-mode)
-
-;; Yasnippet
-;; (require 'yasnippet)
-;; (yas-reload-all)
-;; (add-hook 'prog-mode-hook #'yas-minor-mode)
 
 (provide 'init-defaults)
 ;;; init-defaults.el ends here

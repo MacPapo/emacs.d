@@ -1,5 +1,5 @@
 #+title: GNU Emacs Configuration
-#+author: jacopo Costantini
+#+author: Jacopo Costantini
 #+language: en
 #+options: ':t toc:nil author:t num:t
 #+startup: content indent
@@ -226,14 +226,14 @@
 ** Evil
 
 #+begin_src elisp :tangle ~/.emacs.d/lisp/init-evil.el
-  ;;; init-evil.el --- Using VIM bindings ;; -*- lexical-bindings: t; -*-
-  ;;; Commentary:
-  ;;; Code:
+    ;;; init-evil.el --- Using VIM bindings ;; -*- lexical-bindings: t; -*-
+    ;;; Commentary:
+    ;;; Code:
 
   (use-package evil
     :demand t
     :init
-    (setq evil-want-integration t ;; This is optional since it's already set to t by default
+    (setq evil-want-integration t
           evil-undo-system 'undo-redo
           evil-split-window-below t
           evil-vsplit-window-right t
@@ -241,10 +241,14 @@
           evil-search-wrap t
           evil-want-keybinding nil)
     :config
-    (evil-mode 1))
+    (with-eval-after-load 'evil-maps
+      (define-key evil-motion-state-map (kbd "SPC") nil)
+      (define-key evil-motion-state-map (kbd "RET") nil)
+      (define-key evil-motion-state-map (kbd "TAB") nil))
+    (evil-mode +1))
 
   (use-package evil-collection
-    :after evil
+    :demand t
     :config
     (evil-collection-init))
 
@@ -262,77 +266,147 @@
       :global-prefix "M-SPC") ;; to use in insert mode
 
     (mp/leader-keys
-     "SPC"     '(smex :wk "SMEX")
-     ","       '(switch-to-buffer :wk "Switch buffer")
-     "."       '(find-file :wk "Find File")
-     "TAB TAB" '(comment-line :wk "Comment lines")
-     "u"       '(universal-argument :wk "Universal argument"))
+      "SPC"     '(smex :wk "SMEX")
+      ","       '(switch-to-buffer :wk "Switch buffer")
+      "."       '(find-file :wk "Find File")
+      "TAB TAB" '(comment-line :wk "Comment lines")
+      "u"       '(universal-argument :wk "Universal argument"))
 
     (mp/leader-keys
-     "b"       '(:ignore t :wk "Buffers/Bookmarks")
-     "b b"     '(switch-to-buffer :wk "Switch to buffer")
-     "b c"     '(clone-indirect-buffer :wk "Create indirect buffer copy in a split")
-     "b C"     '(clone-indirect-buffer-other-window :wk "Clone indirect buffer in new window")
-     "b d"     '(bookmark-delete :wk "Delete bookmark")
-     "b i"     '(ibuffer :wk "Ibuffer")
-     "b k"     '(kill-current-buffer :wk "Kill current buffer")
-     "b K"     '(kill-some-buffers :wk "Kill multiple buffers")
-     "b l"     '(list-bookmarks :wk "List bookmarks")
-     "b m"     '(bookmark-set :wk "Set bookmark")
-     "b n"     '(next-buffer :wk "Next buffer")
-     "b p"     '(previous-buffer :wk "Previous buffer")
-     "b r"     '(revert-buffer :wk "Reload buffer")
-     "b R"     '(rename-buffer :wk "Rename buffer")
-     "b s"     '(basic-save-buffer :wk "Save buffer")
-     "b S"     '(save-some-buffers :wk "Save multiple buffers")
-     "b w"     '(bookmark-save :wk "Save current bookmarks to bookmark file"))
+      "b"       '(:ignore t :wk "Buffers/Bookmarks")
+      "b b"     '(switch-to-buffer :wk "Switch to buffer")
+      "b c"     '(clone-indirect-buffer :wk "Create indirect buffer copy in a split")
+      "b C"     '(clone-indirect-buffer-other-window :wk "Clone indirect buffer in new window")
+      "b d"     '(bookmark-delete :wk "Delete bookmark")
+      "b i"     '(ibuffer :wk "Ibuffer")
+      "b k"     '(kill-current-buffer :wk "Kill current buffer")
+      "b K"     '(kill-some-buffers :wk "Kill multiple buffers")
+      "b l"     '(list-bookmarks :wk "List bookmarks")
+      "b m"     '(bookmark-set :wk "Set bookmark")
+      "b n"     '(next-buffer :wk "Next buffer")
+      "b p"     '(previous-buffer :wk "Previous buffer")
+      "b r"     '(revert-buffer :wk "Reload buffer")
+      "b R"     '(rename-buffer :wk "Rename buffer")
+      "b s"     '(basic-save-buffer :wk "Save buffer")
+      "b S"     '(save-some-buffers :wk "Save multiple buffers")
+      "b w"     '(bookmark-save :wk "Save current bookmarks to bookmark file"))
 
     (mp/leader-keys
-     "d"       '(:ignore t :wk "Dired")
-     "d d"     '(dired :wk "Open dired")
-     "d j"     '(dired-jump :wk "Dired jump to current"))
+      "s"      '(:ignore t :wk "Search")
+      "s g"    '(grep :wk "Grep")
+      "s d"    '(dictionary-search :wk "Search Dictionary")
+      "s m"    '(man :wk "Man pages")
+      "s w"    '(woman :wk "Similar to Man"))
 
     (mp/leader-keys
-     "e"       '(:ignore t :wk "Eshell/Evaluate")
-     "e b"     '(eval-buffer :wk "Evaluate elisp in buffer")
-     "e d"     '(eval-defun :wk "Evaluate defun containing or after point")
-     "e e"     '(eval-expression :wk "Evaluate and elisp expression")
-     "e l"     '(eval-last-sexp :wk "Evaluate elisp expression before point")
-     "e r"     '(eval-region :wk "Evaluate elisp in region")
-     "e R"     '(eww-reload :which-key "Reload current page in EWW")
-     "e s"     '(eshell :which-key "Eshell")
-     "e w"     '(eww :which-key "EWW emacs web wowser"))
+      "t"      '(:ignore t :wk "Toggle")
+      "t l"    '(display-line-numbers-mode :wk "Toggle line numbers"))
 
     (mp/leader-keys
-     "g"       '(:ignore t :wk "Git")
-     "g /"     '(magit-dispatch :wk "Magit dispatch")
-     "g ."     '(magit-file-dispatch :wk "Magit file dispatch")
-     "g b"     '(magit-branch-checkout :wk "Switch branch")
+      "d"       '(:ignore t :wk "Dired")
+      "d d"     '(dired :wk "Open dired")
+      "d j"     '(dired-jump :wk "Dired jump to current"))
 
-     "g c"     '(:ignore t :wk "Create")
-     "g c b"   '(magit-branch-and-checkout :wk "Create branch and checkout")
-     "g c c"   '(magit-commit-create :wk "Create commit")
-     "g c f"   '(magit-commit-fixup :wk "Create fixup commit")
-     "g C"     '(magit-clone :wk "Clone repo")
+    (mp/leader-keys
+      "e"       '(:ignore t :wk "Eshell/Evaluate")
+      "e b"     '(eval-buffer :wk "Evaluate elisp in buffer")
+      "e d"     '(eval-defun :wk "Evaluate defun containing or after point")
+      "e e"     '(eval-expression :wk "Evaluate and elisp expression")
+      "e l"     '(eval-last-sexp :wk "Evaluate elisp expression before point")
+      "e r"     '(eval-region :wk "Evaluate elisp in region")
+      "e R"     '(eww-reload :which-key "Reload current page in EWW")
+      "e s"     '(eshell :which-key "Eshell")
+      "e w"     '(eww :which-key "EWW emacs web wowser"))
 
-     "g f"     '(:ignore t :wk "Find")
-     "g f c"   '(magit-show-commit :wk "Show commit")
-     "g f f"   '(magit-find-file :wk "Magit find file")
-     "g f g"   '(magit-find-git-config-file :wk "Find gitconfig file")
-     "g F"     '(magit-fetch :wk "Git fetch")
-     "g g"     '(magit-status :wk "Magit status")
-     "g i"     '(magit-init :wk "Initialize git repo")
-     "g l"     '(magit-log-buffer-file :wk "Magit buffer log")
-     "g r"     '(vc-revert :wk "Git revert file")
-     "g s"     '(magit-stage-file :wk "Git stage file")
-     "g t"     '(git-timemachine :wk "Git time machine")
-     "g u"     '(magit-stage-file :wk "Git unstage file"))
+    (mp/leader-keys
+      "f" '(:ignore t :wk "Files")    
+      "f c" '((lambda () (interactive)
+                (find-file (concat user-emacs-directory "papo-config.org"))) 
+              :wk "Open emacs papo-config.org")
+      "f e" '((lambda () (interactive)
+                (dired user-emacs-directory)) 
+              :wk "Open user-emacs-directory in dired")
+      "f d" '(find-grep-dired :wk "Search for string in files in DIR")
+      ;; "f g" '(counsel-grep-or-swiper :wk "Search for string current file")
+      "f i" '((lambda () (interactive)
+                (find-file (concat user-emacs-directory "init.el"))) 
+              :wk "Open emacs init.el")
+      ;; "f j" '(counsel-file-jump :wk "Jump to a file below current directory")
+      ;; "f l" '(counsel-locate :wk "Locate a file")
+      ;; "f r" '(counsel-recentf :wk "Find recent files")
+      "f u" '(sudo-edit-find-file :wk "Sudo find file")
+      "f U" '(sudo-edit :wk "Sudo edit file"))
+
+    (mp/leader-keys
+      "g"       '(:ignore t :wk "Git")
+      "g /"     '(magit-dispatch :wk "Magit dispatch")
+      "g ."     '(magit-file-dispatch :wk "Magit file dispatch")
+      "g b"     '(magit-branch-checkout :wk "Switch branch")
+
+      "g c"     '(:ignore t :wk "Create")
+      "g c b"   '(magit-branch-and-checkout :wk "Create branch and checkout")
+      "g c c"   '(magit-commit-create :wk "Create commit")
+      "g c f"   '(magit-commit-fixup :wk "Create fixup commit")
+      "g C"     '(magit-clone :wk "Clone repo")
+
+      "g f"     '(:ignore t :wk "Find")
+      "g f c"   '(magit-show-commit :wk "Show commit")
+      "g f f"   '(magit-find-file :wk "Magit find file")
+      "g f g"   '(magit-find-git-config-file :wk "Find gitconfig file")
+      "g F"     '(magit-fetch :wk "Git fetch")
+      "g g"     '(magit-status :wk "Magit status")
+      "g i"     '(magit-init :wk "Initialize git repo")
+      "g l"     '(magit-log-buffer-file :wk "Magit buffer log")
+      "g r"     '(vc-revert :wk "Git revert file")
+      "g s"     '(magit-stage-file :wk "Git stage file")
+      "g t"     '(git-timemachine :wk "Git time machine")
+      "g u"     '(magit-stage-file :wk "Git unstage file"))
+
+    (mp/leader-keys
+      "p"      '(projectile-command-map :wk "Projectile"))
+
+    (mp/leader-keys
+      "h"      '(:ignore t :wk "Help")
+      "h a"    '(apropos :wk "Apropose")
+      "h b"    '(describe-bindings :wk "Describe bindings")
+      "h c"    '(describe-char :wk "Describe char under cursor")
+      "h e"    '(view-echo-area-messages :wk "View echo area messages")
+      ;; "h f"    '(describe-function :wk "Describe Function")
+      "h f"    '(helpful-callable :wk "Describe Function")
+      "h F"    '(describe-face :wk "Describe Face")
+      "h g"    '(describe-gnu-project :wk "Describe GNU Project")
+      "h i"    '(info :wk "Info")
+      "h I"    '(describe-input-method :wk "Describe Input Method")
+      ;; "h k"    '(describe-key :wk "Describe key")
+      "h k"    '(helpful-key :wk "Describe key")
+      "h l"    '(view-lossage :wk "Display recent keystrokes and the commands run")
+      "h L"    '(describe-language-environment :wk "Describe language environment")
+      "h m"    '(describe-mode :wk "Describe mode")
+      "h t"    '(load-theme :wk "Load theme")
+      ;; "h v"    '(describe-variable :wk "Describe variable")
+      "h v"    '(helpful-variable :wk "Describe variable")
+      "h w"    '(where-is :wk "Prints keybinding for command if set")
+      ;; "h x"    '(describe-command :wk "Display full documentation for command")
+      "h x"    '(helpful-command :wk "Display full documentation for command")
+
+      "h d"    '(:ignore t :wk "Emacs Documentation")
+      "h d a"  '(about-emacs :wk "About Emacs")
+      "h d d"  '(view-emacs-debugging :wk "View Emacs debugging")
+      "h d f"  '(view-emacs-FAQ :wk "View Emacs FAQ")
+      "h d m"  '(info-emacs-manual :wk "The Emacs Manual")
+      "h d n"  '(view-emacs-news :wk "View Emacs News")
+      "h d o"  '(describe-distribution :wk "How to obtain Emacs")
+      "h d p"  '(view-emacs-problems :wk "View Emacs problems")
+      "h d t"  '(view-emacs-todo :wk "View Emacs todo")
+      "h d w"  '(describe-no-warranty :wk "Describe no wannanty")
+      )
 
     (mp/leader-keys
       "w"      '(:ignore t :wk "Windows")
 
       ;; Window splits
-      "w c"    '(evil-window-delete :wk "Close window")
+      "w q"    '(evil-window-delete :wk "Close window")
+      "w u"    '(delete-other-windows :wk "Unique window")
       "w n"    '(evil-window-new :wk "New window")
       "w s"    '(evil-window-split :wk "Horizontal split window")
       "w v"    '(evil-window-vsplit :wk "Vertical split window")
@@ -350,19 +424,33 @@
       "w K"   '(buf-move-up :wk "Buffer move up")
       "w L"   '(buf-move-right :wk "Buffer move right"))
 
-    ;; bind in motion state (inherited by the normal, visual, and operator states)
-    ;; (mmap
-    ;;  ";" 'evil-ex
-    ;;  ":" 'evil-repeat-find-char)
+    (mp/leader-keys
+      "c"   '(:ignore t :wk "Code")
+      "c a" '(eglot-code-actions :wk "Actions")
+      "c o" '(eglot-code-action-organize-imports :wk "Organize imports")
+      "c r" '(eglot-rename :wk "Rename")
+      "c r" '(eglot-format :wk "Format")
+      "c i" '(imenu :wk "imenu"))
+
+    (mp/leader-keys
+      "!"   '(:ignore t :wk "Flymake/Flycheck")
+      "! n" '(flymake-goto-next-error :wk "Next error")
+      "! p" '(flymake-goto-prev-error :wk "Prev error")
+      "! l" '(flymake-show-buffer-diagnostics :wk "Diagnostics"))
 
     ;;,* Mode Keybindings
     (nmap
       :keymaps 'emacs-lisp-mode-map
       "K" 'elisp-slime-nav-describe-elisp-thing-at-point)
+
+    (nmap
+      :keymaps 'ruby-mode-map
+      "." 'xref-find-definitions
+      "," 'xref-go-back)
     )
 
   (provide 'init-evil)
-  ;;; init-evil.el ends here
+    ;;; init-evil.el ends here
 #+end_src
 ** Company
 
@@ -379,28 +467,27 @@
           company-lighter-base "©"
           company-tooltip-limit 10
           company-idle-delay 0.1
-          ;; company-minimum-prefix-length 2
+          company-minimum-prefix-length 1
           ;; company-require-match 'never
           ;; company-format-margin-function 'company-text-icons-margin
           company-tooltip-minimum 4
           ;; company-text-face-extra-attributes '(:weight bold :slant italic)
-          company-text-icons-add-background t
-          ;; company-dabbrev-other-buffers nil
-          ;; company-dabbrev-ignore-case nil
-          ;; company-dabbrev-downcase nil
+          company-text-icons-add-background nil
+          company-dabbrev-other-buffers nil
+          company-dabbrev-ignore-case nil
+          company-dabbrev-downcase nil
           company-tooltip-flip-when-above t
           ;; company-show-quick-access 'left
-          ;; company-backends '(company-capf)
           company-frontends '(company-pseudo-tooltip-frontend
                               company-echo-metadata-frontend)
           company-files-exclusions '(".git/" ".DS_Store")
-          company-transformers '(delete-consecutive-dups
-                                 company-sort-by-occurrence)
+          ;; company-transformers '(delete-consecutive-dups
+                                 ;; company-sort-by-occurrence)
           company-global-modes '(not erc-mode message-mode help-mode))
     (global-company-mode +1))
 
   (use-package company-prescient
-    :after company
+    :demand t
     :config
     (company-prescient-mode +1))
 
@@ -411,149 +498,161 @@
 ** Defaults
 
 #+begin_src elisp :tangle ~/.emacs.d/lisp/init-defaults.el
-  ;;; init-defaults.el --- Better Emacs Defaults ;; -*- lexical-binding: t; -*-
-  ;;; Commentary:
-  ;;; Code:
+    ;;; init-defaults.el --- Better Emacs Defaults ;; -*- lexical-binding: t; -*-
+    ;;; Commentary:
+    ;;; Code:
 
-  (use-package emacs
-    :ensure nil
-    :demand t
-    :config
-    (prefer-coding-system 'utf-8)
-    (set-default-coding-systems 'utf-8)
-    (set-terminal-coding-system 'utf-8)
-    (set-keyboard-coding-system 'utf-8)
+    (use-package emacs
+      :ensure nil
+      :demand t
+      :config
+      (prefer-coding-system 'utf-8)
+      (set-default-coding-systems 'utf-8)
+      (set-terminal-coding-system 'utf-8)
+      (set-keyboard-coding-system 'utf-8)
 
-    (electric-pair-mode +1)
-    (show-paren-mode +1)
-    (global-hl-line-mode +1)
-    (delete-selection-mode +1)
-    (subword-mode +1)
-    (save-place-mode +1)
+      (electric-pair-mode +1)
+      (show-paren-mode +1)
+      (global-hl-line-mode +1)
+      (delete-selection-mode +1)
+      (subword-mode +1)
+      (save-place-mode +1)
 
-    (setq display-time-day-and-date t
-          display-time-24hr-format  t
-          display-time-default-load-average nil)
-    (display-time-mode +1)
+      (setq display-time-day-and-date t
+            display-time-24hr-format  t
+            display-time-default-load-average nil)
+      (display-time-mode +1)
 
-    (setq global-auto-revert-non-file-buffers t
-          auto-revert-verbose nil
-          auto-revert-use-notify nil)
-    (global-auto-revert-mode +1)
-  
-    (setq-default
-     line-number-mode t
-     column-number-mode t
-     size-indication-mode t
-     fill-column 80
-     blink-cursor-interval 0.4
-     bookmark-default-file (locate-user-emacs-file ".bookmarks.el")
-     buffers-menu-max-size 30
-     case-fold-search t
-     load-prefer-newer t
-     ediff-split-window-function 'split-window-horizontally
-     ediff-window-setup-function 'ediff-setup-windows-plain
-     indent-tabs-mode nil
-     tab-width 4
-     auto-save-default nil
-     mouse-yank-at-point t
-     read-buffer-completion-ignore-case t
-     read-file-name-completion-ignore-case t
-     save-interprogram-paste-before-kill t
-     scroll-preserve-screen-position 'always
-     set-mark-command-repeat-pop t
-     tooltip-delay 1.5
-     truncate-lines nil
-     visible-bell t
-     kill-do-not-save-duplicates t
-     echo-keystrokes 0.02
-     truncate-partial-width-windows nil)
+      (setq global-auto-revert-non-file-buffers t
+            auto-revert-verbose nil
+            auto-revert-use-notify nil)
+      (global-auto-revert-mode +1)
 
-    ;; Make native compilation silent and prune its cache.
-    (when (native-comp-available-p)
-      (setq native-comp-async-report-warnings-errors 'silent) ; Emacs 28 with native compilation
-      (setq native-compile-prune-cache t)) ; Emacs 29
+      (setq-default
+       line-number-mode t
+       column-number-mode t
+       size-indication-mode t
+       fill-column 80
+       blink-cursor-interval 0.4
+       bookmark-default-file (locate-user-emacs-file ".bookmarks.el")
+       buffers-menu-max-size 30
+       case-fold-search t
+       load-prefer-newer t
+       ediff-split-window-function 'split-window-horizontally
+       ediff-window-setup-function 'ediff-setup-windows-plain
+       indent-tabs-mode nil
+       tab-width 4
+       auto-save-default nil
+       mouse-yank-at-point t
+       read-buffer-completion-ignore-case t
+       read-file-name-completion-ignore-case t
+       save-interprogram-paste-before-kill t
+       scroll-preserve-screen-position 'always
+       set-mark-command-repeat-pop t
+       tooltip-delay 1.5
+       truncate-lines nil
+       visible-bell t
+       kill-do-not-save-duplicates t
+       echo-keystrokes 0.02
+       truncate-partial-width-windows nil)
 
-    (setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backups"))))
-    ;; (setq auto-save-file-name-transforms
-    ;;     `((".*" ,(concat user-emacs-directory "backups/") t)))
+      ;; Make native compilation silent and prune its cache.
+      (when (native-comp-available-p)
+        (setq native-comp-async-report-warnings-errors 'silent) ; Emacs 28 with native compilation
+        (setq native-compile-prune-cache t)) ; Emacs 29
 
-    (setq x-selection-timeout 100
-          select-enable-clipboard t
-          x-select-enable-clipboard-manager nil)
+      (setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backups"))))
+      ;; (setq auto-save-file-name-transforms
+      ;;     `((".*" ,(concat user-emacs-directory "backups/") t)))
 
-    ;; (setq scroll-margin 1
-    ;;       scroll-conservatively 10000
-    ;;       scroll-preserve-screen-position 1)
+      (setq x-selection-timeout 100
+            select-enable-clipboard t
+            x-select-enable-clipboard-manager nil)
 
-    ;; EMACS C
-    (setq auto-hscroll-mode 'current-line
-          auto-save-interval 64
-          auto-save-timeout 2
-          enable-recursive-minibuffers t
-          history-delete-duplicates t
-          history-length 200)
+      ;; EMACS C
+      (setq auto-hscroll-mode 'current-line
+            auto-save-interval 64
+            auto-save-timeout 2
+            enable-recursive-minibuffers t
+            history-delete-duplicates t
+            history-length 200)
 
-    (setq backup-by-copying t
-          delete-old-versions t
-          version-control t
-          compilation-scroll-output 'first-error
-          create-lockfiles nil
-          redisplay-dont-pause t
-          confirm-kill-emacs 'y-or-n-p
-          undo-limit 800000
-          max-lisp-eval-depth 10000
-          x-stretch-cursor t)
+      (setq backup-by-copying t
+            delete-old-versions t
+            version-control t
+            compilation-scroll-output 'first-error
+            create-lockfiles nil
+            redisplay-dont-pause t
+            confirm-kill-emacs 'y-or-n-p
+            undo-limit 800000
+            max-lisp-eval-depth 10000
+            x-stretch-cursor t)
 
-    ;; enable features
-    (mapc (lambda (x) (put x 'disabled nil))
-          '(erase-buffer upcase-region downcase-region dired-find-alternate-file narrow-to-region)))
+      (when *is-a-mac*
+        (setq ns-alternate-modifier 'alt
+              ns-command-modifier 'meta
+              ns-function-modifier 'hyper
+              ns-right-alternate-modifier 'none)
+        ;; Settings for the Emacs Mac-port
+        (setq mac-command-modifier 'meta
+              mac-option-modifier 'alt
+              mac-pass-command-to-system nil))
 
-  (use-package savehist
-    :ensure nil
-    :config
-    (setq savehist-additional-variables '(search-ring regexp-search-ring))
-    (setq savehist-autosave-interval 60)
-    (savehist-mode +1))
+      ;; Select treesitter langs
+      (setq treesit-language-source-alist
+            '((ruby "https://github.com/tree-sitter/tree-sitter-ruby")))
 
-  (use-package recentf
-    :ensure nil
-    :config
-    (setq recentf-max-saved-items 600
-          recentf-exclude '("COMMIT_MSG" "COMMIT_EDITMSG" "github.*txt$"
-                            "[0-9a-f]\\{32\\}-[0-9a-f]\\{32\\}\\.org"
-                            ".*png$" ".*cache$"))
-    (recentf-mode 1))
+      ;; enable features
+      (mapc (lambda (x) (put x 'disabled nil))
+            '(erase-buffer upcase-region downcase-region dired-find-alternate-file narrow-to-region)))
 
-  (use-package eldoc
-    :ensure nil
-    :config
-    (remove-hook 'after-change-major-mode-hook
-                 'global-eldoc-mode-enable-in-buffers)
-    (global-eldoc-mode -1))
+    (use-package sudo-edit)
 
-  (use-package winner
-    :ensure nil
-    :bind (("M-N" . winner-redo)
-           ("M-P" . winner-undo))
-    :config
-    (remove-hook 'minibuffer-setup-hook 'winner-save-unconditionally)
-    (winner-mode 1))
+    (use-package helpful)
 
-  (use-package uniquify
-    :ensure nil
-    :config
-    (setq uniquify-buffer-name-style 'forward
-          uniquify-separator "/"
-          uniquify-ignore-buffers-re "^\\*"))
+    (use-package savehist
+      :ensure nil
+      :config
+      (setq savehist-additional-variables '(search-ring regexp-search-ring))
+      (setq savehist-autosave-interval 60)
+      (savehist-mode +1))
 
-  (use-package display-line-numbers
-    :ensure nil
-    :hook prog-mode
-    :config
-    (setq-default display-line-numbers-width 3))
+    (use-package recentf
+      :ensure nil
+      :config
+      (setq recentf-max-saved-items 600
+            recentf-exclude '("COMMIT_MSG" "COMMIT_EDITMSG" "github.*txt$"
+                              "[0-9a-f]\\{32\\}-[0-9a-f]\\{32\\}\\.org"
+                              ".*png$" ".*cache$"))
+      (recentf-mode 1))
 
-  (use-package display-fill-column-indicator
+    (use-package buffer-move)
+
+    (use-package winner
+      :ensure nil
+      :bind (("M-N" . winner-redo)
+             ("M-P" . winner-undo))
+      :config
+      (remove-hook 'minibuffer-setup-hook 'winner-save-unconditionally)
+      (winner-mode 1))
+
+    (use-package uniquify
+      :ensure nil
+      :config
+      (setq uniquify-buffer-name-style 'forward
+            uniquify-separator "/"
+            uniquify-ignore-buffers-re "^\\*"))
+
+    (use-package display-line-numbers
+      :ensure nil
+      :hook prog-mode
+      :config
+      (setq-default
+       display-line-numbers-width 3
+       display-line-numbers 'relative
+       display-line-numbers-current-absolute t))
+
+    (use-package display-fill-column-indicator
       :ensure nil
       :hook prog-mode
       :config
@@ -561,100 +660,83 @@
        indicate-buffer-boundaries 'left
        display-fill-column-indicator-character ?\u254e))
 
-  (use-package dired
-    :ensure nil
-    :config
-    (setq dired-listing-switches "-laGh1v"
-          list-directory-brief-switches "-CFh"
-          list-directory-verbose-switches "-lhG"
-          dired-recursive-deletes 'always
-          dired-recursive-copies 'always
-          dired-dwim-target t))
+    (use-package dired
+      :ensure nil
+      :config
+      (when *is-a-mac* (setq insert-directory-program "gls"))
 
-  (use-package mac-config
-    :ensure nil
-    :if (eq *is-a-mac* t)
-    :config
-    (setq ns-alternate-modifier 'alt
-          ns-command-modifier 'meta
-          ns-function-modifier 'hyper
-          ns-right-alternate-modifier 'alt)
+      (setq dired-listing-switches "-laGh1v"
+            list-directory-brief-switches "-CFh"
+            list-directory-verbose-switches "-lhG"
+            dired-recursive-deletes 'always
+            dired-recursive-copies 'always
+            dired-dwim-target t))
 
-    ;; Settings for the Emacs Mac-port
-    (setq mac-command-modifier 'meta
-          mac-option-modifier 'alt
-          mac-pass-command-to-system nil))
+    (use-package isearch
+      :ensure nil
+      :config
+      (setq isearch-repeat-on-direction-change t
+            isearch-wrap-pause nil
+            isearch-lazy-count t
+            lazy-count-prefix-format "[%s of %s] "
+            isearch-forward-thing-at-point '(region url email symbol sexp)
+            isearch-allow-prefix t))
 
-  (use-package isearch
-    :ensure nil
-    :config
-    (setq isearch-repeat-on-direction-change t
-          isearch-wrap-pause nil
-          isearch-lazy-count t
-          lazy-count-prefix-format "[%s of %s] "
-          isearch-forward-thing-at-point '(region url email symbol sexp)
-          isearch-allow-prefix t))
+    (use-package multiple-cursors
+      :bind (("C->" . mc/mark-next-like-this)
+             ("C-<" . mc/mark-previous-like-this)
+             ("C-c C-<" . mc/mark-all-like-this)))
 
-  (use-package multiple-cursors
-    :bind (("C->" . mc/mark-next-like-this)
-           ("C-<" . mc/mark-previous-like-this)
-           ("C-c C-<" . mc/mark-all-like-this)))
+    (use-package avy
+      :bind ("C-j" . avy-goto-char-timer)
+      :config
+      (setq avy-timeout-seconds 0.25))
 
-  (use-package avy
-    :bind ("C-j" . avy-goto-char-timer)
-    :config
-    (setq avy-timeout-seconds 0.25))
+    (use-package ace-window
+      :bind ("M-o" . ace-window)
+      :config
+      (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
 
-  (use-package ace-window
-    :bind ("M-o" . ace-window)
-    :config
-    (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
+    (use-package ibuffer
+      :ensure nil
+      :bind (("C-x C-b" . ibuffer)))
 
-  (use-package ibuffer
-    :ensure nil
-    :bind (("C-x C-b" . ibuffer)))
+    (use-package expand-region
+      :bind ("C-=" . er/expand-region))
 
-  (use-package expand-region
-    :bind ("C-=" . er/expand-region))
+    (use-package which-key
+      :demand t
+      :config
+      (which-key-mode))
 
-  (use-package which-key
-    :demand t
-    :config
-    (which-key-mode))
+    (use-package crux
+      :bind (
+             ("C-o" . crux-smart-open-line)
+             ("C-S-o" . crux-smart-open-line-above)
+             ("C-k" . crux-smart-kill-line)
+             ("C-<backspace>". crux-kill-line-backwards)
+             ("M-<down>" . crux-duplicate-current-line-or-region)
+             ("M-S-<down>" . crux-duplicate-and-comment-current-line-or-region)
+             ("C-c K" . crux-kill-other-buffers)
+             ("M-j" . crux-top-join-line)
 
-  (use-package crux
-    :bind (
-           ("C-o" . crux-smart-open-line)
-           ("C-S-o" . crux-smart-open-line-above)
-           ("C-k" . crux-smart-kill-line)
-           ("C-<backspace>". crux-kill-line-backwards)
-           ("M-<down>" . crux-duplicate-current-line-or-region)
-           ("M-S-<down>" . crux-duplicate-and-comment-current-line-or-region)
-           ("C-c K" . crux-kill-other-buffers)
-           ("M-j" . crux-top-join-line)
+             ([remap move-beginning-of-line] . crux-move-beginning-of-line)
+             ([remap kill-whole-line] . crux-kill-whole-line)))
 
-           ([remap move-beginning-of-line] . crux-move-beginning-of-line)
-           ([remap kill-whole-line] . crux-kill-whole-line)))
+    (use-package rainbow-delimiters
+      :hook prog-mode
+      ;; :diminish rainbow-mode
+      )
 
-  (use-package rainbow-delimiters
-    :hook prog-mode
-    ;; :diminish rainbow-mode
-    )
+    ;; Smartparens
+    ;; (require 'smartparens-config)
+    ;; (setq show-paren-delay 0)
+    ;; (setq sp-highlight-pair-overlay nil)
+    ;; (add-hook 'prog-mode-hook #'smartparens-mode)
+    ;; (add-hook 'text-mode-hook #'smartparens-mode)
 
-  ;; Smartparens
-  ;; (require 'smartparens-config)
-  ;; (setq show-paren-delay 0)
-  ;; (setq sp-highlight-pair-overlay nil)
-  ;; (add-hook 'prog-mode-hook #'smartparens-mode)
-  ;; (add-hook 'text-mode-hook #'smartparens-mode)
-
-  ;; Yasnippet
-  ;; (require 'yasnippet)
-  ;; (yas-reload-all)
-  ;; (add-hook 'prog-mode-hook #'yas-minor-mode)
-
-  (provide 'init-defaults)
-  ;;; init-defaults.el ends here
+    (provide 'init-defaults)
+    ;;; init-defaults.el ends here
 #+end_src
 
 ** Themes
@@ -670,7 +752,7 @@
   ;;(load-theme 'base16-ashes t)
   (load-theme 'modus-vivendi t)
 
-  (set-face-attribute 'default nil :font "Iosevka" :height 110)
+  (set-face-attribute 'default nil :font "Iosevka" :height 130)
 
   (provide 'init-themes)
   ;;; init-themes.el ends here
@@ -740,14 +822,46 @@
   ;;; Code:
   (add-to-list 'load-path (expand-file-name "lisp/languages" user-emacs-directory))
 
+  (require 'init-c-cpp)
   (require 'init-ruby)
   (require 'init-dart)
   (require 'init-data)
   (require 'init-lisp)
   (require 'init-sql)
+  (require 'init-markdown)
+
+  (use-package eglot
+    :ensure nil
+    :init
+    (setq eglot-stay-out-of '(flymake)))
+
+  (use-package flymake
+    :ensure nil
+    :hook (prog-mode . flymake-mode))
+
+  (use-package eldoc
+    :demand t
+    :ensure nil
+    :init
+    (global-eldoc-mode +1))
 
   (provide 'init-langs)
   ;;; init-langs.el ends here
+#+end_src
+
+*** C/C++
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/languages/init-c-cpp.el
+  ;;; init-c-cpp.el --- C-Cpp Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  ;; C++
+  (use-package modern-cpp-font-lock
+    :hook (c++-mode . modern-c++-font-lock-mode))
+
+  (provide 'init-c-cpp)
+  ;;; init-c-cpp.el ends here
 #+end_src
 
 *** Ruby
@@ -757,15 +871,27 @@
   ;;; Commentary:
   ;;; Code:
 
+  ;; (use-package ruby-ts-mode
+  ;;   :ensure nil
+  ;;   :hook (ruby-ts-mode . subword-mode)
+  ;;   :mode "\\.rb\\'"
+  ;;   :mode "Rakefile\\'"
+  ;;   :mode "Gemfile\\'"
+  ;;   :mode "\\.ru\\'"
+  ;;   :custom
+  ;;   (ruby-indent-level 2)
+  ;;   (ruby-indent-tabs-mode nil))
+
   (use-package inf-ruby
     :hook ((ruby-mode    . inf-ruby-minor-mode)
            (ruby-ts-mode . inf-ruby-minor-mode)))
 
-  (use-package rvm
-    :if (eq *rvm-installed* t)
-    :after inf-ruby
-    :config
-    (advice-add 'inf-ruby-console-auto :before #'rvm-activate-corresponding-ruby))
+  (when *rvm-installed*
+    (use-package rvm
+      :demand t
+      :config
+      (message "CHIAMATO MI AI")
+      (advice-add 'inf-ruby-console-auto :before #'rvm-activate-corresponding-ruby)))
 
   (use-package robe
     :hook ((ruby-mode    . robe-mode)
@@ -918,6 +1044,21 @@
   ;;; init-sql.el ends here
 #+end_src
 
+*** Markdown
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/languages/init-markdown.el
+  ;;; init-markdown.el --- Markdown Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package markdown-mode
+    :magic "\\.md\\'")
+
+  (provide 'init-markdown)
+  ;;; init-markdown.el ends here
+#+end_src
+
+
 ** Miscellaneous
 
 #+begin_src elisp :tangle ~/.emacs.d/lisp/init-misc.el
@@ -926,11 +1067,33 @@
   ;;; Code:
   (add-to-list 'load-path (expand-file-name "lisp/miscellaneous" user-emacs-directory))
 
+  (require 'init-yasnippet)
   (require 'init-docker)
   (require 'init-gnus)
 
   (provide 'init-misc)
   ;;; init-misc.el ends here
+#+end_src
+
+*** Yasnippet
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/miscellaneous/init-yasnippet.el
+    ;;; init-yasnippet.el --- Yasnippet snippets ;; -*- lexical-binding: t; -*-
+    ;;; Commentary:
+    ;;; Code:
+
+    (use-package yasnippet
+      :hook (prog-mode . yas-minor-mode)
+      :config
+      (setq yas-snippet-dirs (list (concat user-emacs-directory "snippets")))
+      (push '(company-semantic :with company-yasnippet) company-backends)
+      (yas-reload-all))
+
+    (use-package yasnippet-snippets
+      :after yasnippet)
+
+    (provide 'init-yasnippet)
+    ;;; init-yasnippet.el ends here
 #+end_src
 
 *** Docker

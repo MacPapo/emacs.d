@@ -8,7 +8,7 @@
 ;;(load-theme 'base16-ashes t)
 (load-theme 'modus-vivendi t)
 
-(set-face-attribute 'default nil :font "Iosevka" :height 110)
+(set-face-attribute 'default nil :font "Iosevka" :height 130)
 
 (provide 'init-themes)
 ;;; init-themes.el ends here
