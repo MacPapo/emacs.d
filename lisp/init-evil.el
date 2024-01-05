@@ -201,14 +201,13 @@
     "c a" '(eglot-code-actions :wk "Actions")
     "c o" '(eglot-code-action-organize-imports :wk "Organize imports")
     "c r" '(eglot-rename :wk "Rename")
-    "c r" '(eglot-format :wk "Format")
+    "c f" '(eglot-format :wk "Format")
     "c i" '(imenu :wk "imenu"))
 
   (mp/leader-keys
     "!"   '(:ignore t :wk "Flymake/Flycheck")
-    "! n" '(flymake-goto-next-error :wk "Next error")
-    "! p" '(flymake-goto-prev-error :wk "Prev error")
-    "! l" '(flymake-show-buffer-diagnostics :wk "Diagnostics"))
+    "! n" '(flycheck-next-error :wk "Next error")
+    "! p" '(flycheck-previous-error :wk "Prev error"))
 
   ;;,* Mode Keybindings
   (nmap
@@ -218,7 +217,8 @@
   (nmap
     :keymaps 'ruby-mode-map
     "." 'xref-find-definitions
-    "," 'xref-go-back)
+    "," 'xref-go-back
+    "K" 'yari)
   )
 
 (provide 'init-evil)

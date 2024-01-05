@@ -14,11 +14,11 @@
 (use-package eglot
   :ensure nil
   :init
-  (setq eglot-stay-out-of '(flymake)))
+  (setq eglot-stay-out-of '(flymake flycheck)))
 
-(use-package flymake
+(use-package flycheck
   :ensure nil
-  :hook (prog-mode . flymake-mode))
+  :hook (prog-mode . flycheck-mode))
 
 (use-package eldoc
   :demand t
