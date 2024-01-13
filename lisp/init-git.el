@@ -2,9 +2,7 @@
 ;;; Commentary:
 ;;; Code:
 
-(use-package magit
-  :config
-  (setq magit-completing-read-function #'magit-ido-completing-read))
+(use-package magit)
 
 (provide 'init-git)
 ;;; init-git.el ends here

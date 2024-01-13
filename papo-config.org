@@ -151,7 +151,7 @@
   (eval-when-compile
     (require 'use-package))
   (setq use-package-always-ensure t
-        use-package-always-defer t)
+        use-package-always-defer nil)
 
   ;; Set up custom file
   (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
@@ -159,7 +159,8 @@
     (load custom-file))
 
   ;; Completions
-  (require 'init-ido)
+  (require 'init-base)
+  (require 'init-vertico)
   (require 'init-evil)
   (require 'init-company)
 
@@ -184,43 +185,418 @@
   ;;; init.el ends here
 #+end_src
 
-** IDO
+** Base
 
-#+begin_src elisp :tangle ~/.emacs.d/lisp/init-ido.el
-  ;;; init-ido.el --- Ido Configuration ;; -*- lexical-binding: t; -*-
-
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-base.el
+  ;;; init-base.el -- Base Emacs Tweaks ;; -*- lexical-binding: t; -*-
   ;;; Commentary:
-
   ;;; Code:
 
-  (use-package ido
+  (use-package emacs
+    :ensure nil
+    :demand t
     :config
-    (setq ido-everywhere t
-          ido-virtual-buffers t
-          ido-use-virtual-buffers t
-          ido-max-prospects 10
-          ido-use-faces t
-          ido-create-new-buffer 'always
-          ido-default-file-method 'selected-window
-          ido-default-buffer-method 'selected-window
-          ido-ignore-buffers '("\\` " "^\*Mess" "^\*Back" ".*Completion" "^\*Ido")
-          ido-enable-flex-matching t)
-    (ido-mode))
+    (prefer-coding-system 'utf-8)
+    (set-default-coding-systems 'utf-8)
+    (set-terminal-coding-system 'utf-8)
+    (set-keyboard-coding-system 'utf-8)
 
-  (use-package ido-completing-read+
-    :after ido
+    (electric-pair-mode +1)
+    (show-paren-mode +1)
+    (global-hl-line-mode +1)
+    (delete-selection-mode +1)
+    (subword-mode +1)
+    (save-place-mode +1)
+
+    (setq display-time-day-and-date t
+          display-time-24hr-format  t
+          display-time-default-load-average nil)
+    (display-time-mode +1)
+
+    (setq global-auto-revert-non-file-buffers t
+          auto-revert-verbose nil
+          auto-revert-use-notify nil)
+    (global-auto-revert-mode +1)
+
+    (setq-default
+     line-number-mode t
+     column-number-mode t
+     size-indication-mode t
+     fill-column 80
+     blink-cursor-interval 0.4
+     bookmark-default-file (locate-user-emacs-file ".bookmarks.el")
+     buffers-menu-max-size 30
+     case-fold-search t
+     load-prefer-newer t
+     ediff-split-window-function 'split-window-horizontally
+     ediff-window-setup-function 'ediff-setup-windows-plain
+     indent-tabs-mode nil
+     tab-width 4
+     auto-save-default nil
+     mouse-yank-at-point t
+     read-buffer-completion-ignore-case t
+     read-file-name-completion-ignore-case t
+     save-interprogram-paste-before-kill t
+     scroll-preserve-screen-position 'always
+     set-mark-command-repeat-pop t
+     tooltip-delay 1.5
+     truncate-lines nil
+     visible-bell t
+     kill-do-not-save-duplicates t
+     echo-keystrokes 0.02
+     truncate-partial-width-windows nil)
+
+    ;; Make native compilation silent and prune its cache.
+    (when (native-comp-available-p)
+      (setq native-comp-async-report-warnings-errors 'silent) ; Emacs 28 with native compilation
+      (setq native-compile-prune-cache t)) ; Emacs 29
+
+    (setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backups"))))
+    ;; (setq auto-save-file-name-transforms
+    ;;     `((".*" ,(concat user-emacs-directory "backups/") t)))
+
+    (setq x-selection-timeout 100
+          select-enable-clipboard t
+          x-select-enable-clipboard-manager nil)
+
+    ;; EMACS C
+    (setq auto-hscroll-mode 'current-line
+          auto-save-interval 64
+          auto-save-timeout 2
+          enable-recursive-minibuffers t
+          history-delete-duplicates t
+          history-length 200)
+
+    (setq backup-by-copying t
+          delete-old-versions t
+          version-control t
+          compilation-scroll-output 'first-error
+          create-lockfiles nil
+          redisplay-dont-pause t
+          confirm-kill-emacs 'y-or-n-p
+          undo-limit 800000
+          max-lisp-eval-depth 10000
+          x-stretch-cursor t)
+
+    (when *is-a-mac*
+      (setq ns-alternate-modifier 'alt
+            ns-command-modifier 'meta
+            ns-function-modifier 'hyper
+            ns-right-alternate-modifier 'none)
+      ;; Settings for the Emacs Mac-port
+      (setq mac-command-modifier 'meta
+            mac-option-modifier 'alt
+            mac-pass-command-to-system nil))
+
+    ;; enable features
+    (mapc (lambda (x) (put x 'disabled nil))
+          '(erase-buffer upcase-region downcase-region dired-find-alternate-file narrow-to-region)))
+
+  (provide 'init-base)
+  ;;; init-base.el ends here
+#+end_src
+
+** Vertico
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-vertico.el
+  ;;; init-vertico.el -- Vertico Configuration ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package vertico
+    :demand
     :config
-    (ido-ubiquitous-mode 1))
+    (setq vertico-scroll-margin 2
+          vertico-count 12
+          vertico-resize t
+          vertico-cycle t
+          vertico-preselect 'directory)
+    :init
+    (vertico-mode +1)
+    (defun +vertico-restrict-to-matches ()
+      (interactive)
+      (let ((inhibit-read-only t))
+        (goto-char (point-max))
+        (insert " ")
+        (add-text-properties (minibuffer-prompt-end) (point-max)
+                             '(invisible t read-only t cursor-intangible t rear-nonsticky t))))
 
-  ;; Smex
-  (use-package smex
-    :bind (("M-x" . smex)
-           ("M-X" . smex-major-mode-commands)
-           ;; This is your old M-x.
-           ("C-c C-c M-x" . execute-extended-command)))
+    (defvar +vertico-transform-functions nil)
 
-  (provide 'init-ido)
-  ;;; init-ido.el ends here
+    (cl-defmethod vertico--format-candidate :around
+      (cand prefix suffix index start &context ((not +vertico-transform-functions) null))
+      (dolist (fun (ensure-list +vertico-transform-functions))
+        (setq cand (funcall fun cand)))
+      (cl-call-next-method cand prefix suffix index start))
+
+    (defun +vertico-highlight-directory (file)
+      "If FILE ends with a slash, highlight it as a directory."
+      (if (string-suffix-p "/" file)
+          (propertize file 'face 'marginalia-file-priv-dir) ; or face 'dired-directory
+        file))
+
+    ;; function to highlight enabled modes similar to counsel-M-x
+    (defun +vertico-highlight-enabled-mode (cmd)
+      "If MODE is enabled, highlight it as font-lock-constant-face."
+      (let ((sym (intern cmd)))
+        (if (or (eq sym major-mode)
+                (and
+                 (memq sym minor-mode-list)
+                 (boundp sym)))
+            (propertize cmd 'face 'font-lock-constant-face)
+          cmd)))
+
+    (defun my/vertico-insert ()
+      (interactive)
+      (let* ((mb (minibuffer-contents-no-properties))
+             (lc (if (string= mb "") mb (substring mb -1))))
+        (cond ((string-match-p "^[/~:]" lc) (self-insert-command 1 ?/))
+              ((file-directory-p (vertico--candidate)) (vertico-insert))
+              (t (self-insert-command 1 ?/)))))
+    :bind (:map vertico-map
+                ("S-SPC" . #'+vertico-restrict-to-matches)
+                ("/"     . #'my/vertico-insert)))
+
+  (use-package vertico-directory
+    :after vertico
+    :ensure nil
+    :demand
+    :bind (:map vertico-map
+                ("RET"   . vertico-directory-enter)
+                ("DEL"   . vertico-directory-delete-char)
+                ("M-DEL" . vertico-directory-delete-word))
+    :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
+  (use-package vertico-multiform
+    :after vertico
+    :ensure nil
+    :demand nil
+    :init
+    (vertico-multiform-mode +1)
+    ;; add-to-list works if 'file isn't already in the alist
+    ;; setq can be used but will overwrite all existing values
+    (add-to-list 'vertico-multiform-categories
+                 '(file
+                   ;; this is also defined in the wiki, uncomment if used
+                   ;; (vertico-sort-function . sort-directories-first)
+                   (+vertico-transform-functions . +vertico-highlight-directory)))
+    (add-to-list 'vertico-multiform-commands
+                 '(execute-extended-command 
+                   reverse
+                   (+vertico-transform-functions . +vertico-highlight-enabled-mode)))
+    (defadvice vertico-insert
+        (after vertico-insert-add-history activate)
+      "Make vertico-insert add to the minibuffer history."
+      (unless (eq minibuffer-history-variable t)
+        (add-to-history minibuffer-history-variable (minibuffer-contents))))
+
+    (defun my/vertico-truncate-candidates (args)
+      (if-let ((arg (car args))
+               (type (get-text-property 0 'multi-category arg))
+               ((eq (car-safe type) 'file))
+               (w (max 30 (- (window-width) 38)))
+               (l (length arg))
+               ((> l w)))
+          (setcar args (concat "…" (truncate-string-to-width arg l (- l w)))))
+      args)
+    (advice-add #'vertico--format-candidate :filter-args #'my/vertico-truncate-candidates))
+
+  (use-package vertico-reverse
+    :ensure nil
+    :demand
+    :after vertico
+    :init
+    (vertico-reverse-mode +1))
+
+  (use-package savehist
+    :ensure nil
+    :init
+    (savehist-mode +1))
+
+  (use-package orderless
+    :init
+    ;; Configure a custom style dispatcher (see the Consult wiki)
+    ;; (setq orderless-style-dispatchers '(+orderless-consult-dispatch orderless-affix-dispatch)
+    ;;       orderless-component-separator #'orderless-escapable-split-on-space)
+    (setq completion-styles '(substring orderless basic)
+          completion-category-defaults nil
+          completion-category-overrides '((file (styles partial-completion)))))
+
+  (use-package consult
+    :hook (completion-list-mode . consult-preview-at-point-mode)
+    :init
+    ;; Optionally configure the register formatting. This improves the register
+    ;; preview for `consult-register', `consult-register-load',
+    ;; `consult-register-store' and the Emacs built-ins.
+    (setq register-preview-delay 0.5
+          register-preview-function #'consult-register-format)
+
+    (defun consult-info-emacs ()
+      "Search through Emacs info pages."
+      (interactive)
+      (consult-info "emacs" "efaq" "elisp" "cl" "compat"))
+
+    (defun consult-info-org ()
+      "Search through the Org info page."
+      (interactive)
+      (consult-info "org"))
+
+    (defun consult-info-completion ()
+      "Search through completion info pages."
+      (interactive)
+      (consult-info "vertico" "consult" "marginalia" "orderless" "embark"
+                    "corfu" "cape" "tempel"))
+
+    ;; Optionally tweak the register preview window.
+    ;; This adds thin lines, sorting and hides the mode line of the window.
+    (advice-add #'register-preview :override #'consult-register-window)
+
+    ;; Use Consult to select xref locations with preview
+    (setq xref-show-xrefs-function #'consult-xref
+          xref-show-definitions-function #'consult-xref)
+    :config
+
+    ;; Optionally configure preview. The default value
+    ;; is 'any, such that any key triggers the preview.
+    ;; (setq consult-preview-key 'any)
+    ;; (setq consult-preview-key "M-.")
+    ;; (setq consult-preview-key '("S-<down>" "S-<up>"))
+    ;; For some commands and buffer sources it is useful to configure the
+    ;; :preview-key on a per-command basis using the `consult-customize' macro.
+    (consult-customize
+     consult-theme :preview-key '(:debounce 0.2 any)
+     consult-ripgrep consult-git-grep consult-grep
+     consult-bookmark consult-recent-file consult-xref
+     consult--source-bookmark consult--source-file-register
+     consult--source-recent-file consult--source-project-recent-file
+     ;; :preview-key "M-."
+     :preview-key '(:debounce 0.4 any))
+
+    ;; Optionally configure the narrowing key.
+    ;; Both < and C-+ work reasonably well.
+    (setq consult-narrow-key "<"))
+
+  (use-package marginalia
+    :demand
+    :bind (:map minibuffer-local-map
+                ("M-A" . marginalia-cycle))
+    :init
+    (marginalia-mode +1))
+
+  (provide 'init-vertico)
+  ;;; init-vertico.el ends here
+#+end_src
+
+** Defaults
+
+#+begin_src elisp :tangle ~/.emacs.d/lisp/init-defaults.el
+  ;;; init-defaults.el --- Better Emacs Defaults ;; -*- lexical-binding: t; -*-
+  ;;; Commentary:
+  ;;; Code:
+
+  (use-package diminish)
+
+  (use-package sudo-edit)
+
+  (use-package helpful)
+
+  (use-package highlight-numbers
+    :hook (prog-mode . highlight-numbers-mode))
+
+  (use-package highlight-escape-sequences
+    :hook (prog-mode . hes-mode))
+
+  (use-package savehist
+    :ensure nil
+    :config
+    (setq savehist-additional-variables '(search-ring regexp-search-ring))
+    (setq savehist-autosave-interval 60)
+    (savehist-mode +1))
+
+  (use-package recentf
+    :ensure nil
+    :config
+    (setq recentf-max-saved-items 600
+          recentf-exclude '("COMMIT_MSG" "COMMIT_EDITMSG" "github.*txt$"
+                            "[0-9a-f]\\{32\\}-[0-9a-f]\\{32\\}\\.org"
+                            ".*png$" ".*cache$"))
+    (recentf-mode 1))
+
+  (use-package winner
+    :ensure nil
+    :bind (("M-N" . winner-redo)
+           ("M-P" . winner-undo))
+    :config
+    (remove-hook 'minibuffer-setup-hook 'winner-save-unconditionally)
+    (winner-mode 1))
+
+  (use-package uniquify
+    :ensure nil
+    :config
+    (setq uniquify-buffer-name-style 'forward
+          uniquify-separator "/"
+          uniquify-ignore-buffers-re "^\\*"))
+
+  (use-package display-line-numbers
+    :ensure nil
+    :hook prog-mode
+    :config
+    (setq-default
+     display-line-numbers-width 3
+     display-line-numbers-type 'relative))
+
+  (use-package display-fill-column-indicator
+    :ensure nil
+    :hook prog-mode
+    :config
+    (setq-default
+     indicate-buffer-boundaries 'left
+     display-fill-column-indicator-character ?┊))
+
+  (use-package dired
+    :ensure nil
+    :config
+    (when *is-a-mac* (setq insert-directory-program "gls"))
+
+    (setq dired-listing-switches "-laGh1v"
+          list-directory-brief-switches "-CFh"
+          list-directory-verbose-switches "-lhG"
+          dired-recursive-deletes 'always
+          dired-recursive-copies 'always
+          dired-dwim-target t))
+
+  (use-package avy
+    :bind ("C-j" . avy-goto-char-timer)
+    :config
+    (setq avy-timeout-seconds 0.25))
+
+  (use-package ace-window
+    :bind ("M-o" . ace-window)
+    :config
+    (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
+
+  (use-package ibuffer
+    :ensure nil
+    :bind (("C-x C-b" . ibuffer)))
+
+  (use-package which-key
+    :demand t
+    :config
+    (which-key-mode))
+
+  (use-package rainbow-delimiters
+    :hook prog-mode
+    :diminish rainbow-mode)
+
+  ;; Smartparens
+  ;; (require 'smartparens-config)
+  ;; (setq show-paren-delay 0)
+  ;; (setq sp-highlight-pair-overlay nil)
+  ;; (add-hook 'prog-mode-hook #'smartparens-mode)
+  ;; (add-hook 'text-mode-hook #'smartparens-mode)
+
+  (provide 'init-defaults)
+  ;;; init-defaults.el ends here
 #+end_src
 
 ** Evil
@@ -234,25 +610,35 @@
     :demand t
     :init
     (setq evil-want-integration t
+          evil-want-keybinding nil
           evil-undo-system 'undo-redo
+          evil-search-module 'evil-search
           evil-split-window-below t
           evil-vsplit-window-right t
           evil-regexp-search t
           evil-search-wrap t
-          evil-want-keybinding nil)
+          evil-want-C-u-scroll t)
     :config
-    (with-eval-after-load 'evil-maps
-      (define-key evil-motion-state-map (kbd "SPC") nil)
-      (define-key evil-motion-state-map (kbd "RET") nil)
-      (define-key evil-motion-state-map (kbd "TAB") nil))
+    ;;(with-eval-after-load 'evil-maps
+    ;;   (define-key evil-motion-state-map (kbd "SPC") nil)
+    ;;   (define-key evil-motion-state-map (kbd "RET") nil)
+    ;;   (define-key evil-motion-state-map (kbd "TAB") nil))
+
     (evil-mode +1))
 
   (use-package evil-collection
     :demand t
+    :init
+    (setq evil-collection-setup-minibuffer t
+          evil-collection-want-find-usages-bindings t)
     :config
     (evil-collection-init))
 
-  (use-package evil-tutor)
+  (use-package evil-commentary
+    :after evil
+    :diminish
+    :config
+    (evil-commentary-mode +1))
 
   (use-package general
     :demand t
@@ -260,193 +646,202 @@
     (general-evil-setup t)
 
     (general-create-definer mp/leader-keys
-      :states '(normal insert visual emacs)
-      :keymaps 'override
-      :prefix "SPC"
-      :global-prefix "M-SPC") ;; to use in insert mode
+                            :states '(normal insert visual emacs)
+                            :keymaps 'override
+                            :prefix "SPC"
+                            :global-prefix "M-SPC") ;; to use in insert mode
 
     (mp/leader-keys
-      "SPC"     '(smex :wk "SMEX")
-      ","       '(switch-to-buffer :wk "Switch buffer")
-      "."       '(find-file :wk "Find File")
-      "TAB TAB" '(comment-line :wk "Comment lines")
-      "u"       '(universal-argument :wk "Universal argument"))
+     ":"       '(execute-extended-command :wk "M-x")
+     ","       '(consult-buffer :wk "Switch buffer")
+     "."       '(find-file :wk "Find File")
+     "TAB TAB" '(comment-line :wk "Comment lines")
+     "u"       '(universal-argument :wk "Universal argument"))
 
     (mp/leader-keys
-      "b"       '(:ignore t :wk "Buffers/Bookmarks")
-      "b b"     '(switch-to-buffer :wk "Switch to buffer")
-      "b c"     '(clone-indirect-buffer :wk "Create indirect buffer copy in a split")
-      "b C"     '(clone-indirect-buffer-other-window :wk "Clone indirect buffer in new window")
-      "b d"     '(bookmark-delete :wk "Delete bookmark")
-      "b i"     '(ibuffer :wk "Ibuffer")
-      "b k"     '(kill-current-buffer :wk "Kill current buffer")
-      "b K"     '(kill-some-buffers :wk "Kill multiple buffers")
-      "b l"     '(list-bookmarks :wk "List bookmarks")
-      "b m"     '(bookmark-set :wk "Set bookmark")
-      "b n"     '(next-buffer :wk "Next buffer")
-      "b p"     '(previous-buffer :wk "Previous buffer")
-      "b r"     '(revert-buffer :wk "Reload buffer")
-      "b R"     '(rename-buffer :wk "Rename buffer")
-      "b s"     '(basic-save-buffer :wk "Save buffer")
-      "b S"     '(save-some-buffers :wk "Save multiple buffers")
-      "b w"     '(bookmark-save :wk "Save current bookmarks to bookmark file"))
+     "b"       '(:ignore t :wk "Buffers/Bookmarks")
+     "b b"     '(consult-buffer :wk "Switch to buffer")
+     "b w"     '(consult-buffer-other-window :wk "Switch to buffer other window")
+     "b f"     '(consult-buffer-other-frame :wk "Switch to buffer other frame")
+     "b t"     '(consult-buffer-other-tab :wk "Switch to buffer other tab")
+     "b k"     '(kill-current-buffer :wk "Kill current buffer")
+     "b K"     '(kill-buffer :wk "Kill buffers")
+     "b c"     '(clone-indirect-buffer :wk "Create indirect buffer copy in a split")
+     "b C"     '(clone-indirect-buffer-other-window :wk "Clone indirect buffer in new window")
+     "b n"     '(next-buffer :wk "Next buffer")
+     "b p"     '(previous-buffer :wk "Previous buffer")
+     "b P"     '(consult-project-buffer :wk "Consult Project buffers")
+     "b r"     '(revert-buffer :wk "Reload buffer")
+     "b R"     '(rename-buffer :wk "Rename buffer")
+     "b s"     '(basic-save-buffer :wk "Save buffer")
+     "b S"     '(save-some-buffers :wk "Save multiple buffers")
+     "b i"     '(ibuffer :wk "Ibuffer Page")
+     "b d"     '(bookmark-delete :wk "Delete bookmark")
+     "b m"     '(bookmark-set :wk "Create bookmark")
+     "b j"     '(consult-bookmark :wk "Jump to bookmark"))
 
     (mp/leader-keys
-      "s"      '(:ignore t :wk "Search")
-      "s g"    '(grep :wk "Grep")
-      "s d"    '(dictionary-search :wk "Search Dictionary")
-      "s m"    '(man :wk "Man pages")
-      "s w"    '(woman :wk "Similar to Man"))
+     "s"      '(:ignore t :wk "Search")
+     "s f"    '(consult-find :wk "Find")
+     "s F"    '(consult-fd :wk "Find using FD")
+     "s l"    '(consult-locate :wk "Locate")
+     "s g"    '(consult-grep :wk "Consult Grep")
+     "s G"    '(grep :wk "Grep Page")
+     "s r"    '(consult-ripgrep :wk "Consult RipGrep")
+     "s s"    '(consult-line :wk "Consult line")
+     "s S"    '(consult-line-multi :wk "Consul line multi")
+     "s k"    '(consult-keep-lines :wk "Consult keep lines")
+     "s u"    '(consult-focus-lines :wk "Consult focus lines")
+     "s m"    '(consult-man :wk "Consult Man pages")
+     "s w"    '(woman :wk "Similar to Man"))
 
     (mp/leader-keys
-      "t"      '(:ignore t :wk "Toggle")
-      "t l"    '(display-line-numbers-mode :wk "Toggle line numbers"))
+     "t"      '(:ignore t :wk "Toggle")
+     "t l"    '(display-line-numbers-mode :wk "Toggle line numbers"))
 
     (mp/leader-keys
-      "d"       '(:ignore t :wk "Dired")
-      "d d"     '(dired :wk "Open dired")
-      "d j"     '(dired-jump :wk "Dired jump to current"))
+     "d"       '(:ignore t :wk "Dired")
+     "d d"     '(dired :wk "Open dired")
+     "d j"     '(dired-jump :wk "Dired jump to current"))
 
     (mp/leader-keys
-      "e"       '(:ignore t :wk "Eshell/Evaluate")
-      "e b"     '(eval-buffer :wk "Evaluate elisp in buffer")
-      "e d"     '(eval-defun :wk "Evaluate defun containing or after point")
-      "e e"     '(eval-expression :wk "Evaluate and elisp expression")
-      "e l"     '(eval-last-sexp :wk "Evaluate elisp expression before point")
-      "e r"     '(eval-region :wk "Evaluate elisp in region")
-      "e R"     '(eww-reload :which-key "Reload current page in EWW")
-      "e s"     '(eshell :which-key "Eshell")
-      "e w"     '(eww :which-key "EWW emacs web wowser"))
+     "e"       '(:ignore t :wk "Eshell/Evaluate")
+     "e b"     '(eval-buffer :wk "Evaluate elisp in buffer")
+     "e d"     '(eval-defun :wk "Evaluate defun containing or after point")
+     "e e"     '(eval-expression :wk "Evaluate and elisp expression")
+     "e l"     '(eval-last-sexp :wk "Evaluate elisp expression before point")
+     "e r"     '(eval-region :wk "Evaluate elisp in region")
+     "e R"     '(eww-reload :which-key "Reload current page in EWW")
+     "e s"     '(eshell :which-key "Eshell")
+     "e w"     '(eww :which-key "EWW emacs web wowser"))
 
     (mp/leader-keys
-      "f" '(:ignore t :wk "Files")    
-      "f c" '((lambda () (interactive)
-                (find-file (concat user-emacs-directory "papo-config.org"))) 
-              :wk "Open emacs papo-config.org")
-      "f e" '((lambda () (interactive)
-                (dired user-emacs-directory)) 
-              :wk "Open user-emacs-directory in dired")
-      "f d" '(find-grep-dired :wk "Search for string in files in DIR")
-      ;; "f g" '(counsel-grep-or-swiper :wk "Search for string current file")
-      "f i" '((lambda () (interactive)
-                (find-file (concat user-emacs-directory "init.el"))) 
-              :wk "Open emacs init.el")
-      ;; "f j" '(counsel-file-jump :wk "Jump to a file below current directory")
-      ;; "f l" '(counsel-locate :wk "Locate a file")
-      ;; "f r" '(counsel-recentf :wk "Find recent files")
-      "f u" '(sudo-edit-find-file :wk "Sudo find file")
-      "f U" '(sudo-edit :wk "Sudo edit file"))
+     "f" '(:ignore t :wk "Files")    
+     "f c" '((lambda () (interactive)
+               (find-file (concat user-emacs-directory "papo-config.org"))) 
+             :wk "Open emacs papo-config.org")
+     "f e" '((lambda () (interactive)
+               (dired user-emacs-directory)) 
+             :wk "Open user-emacs-directory in dired")
+     "f d" '(find-grep-dired :wk "Search for string in files in DIR")
+     "f i" '((lambda () (interactive)
+               (find-file (concat user-emacs-directory "init.el"))) 
+             :wk "Open emacs init.el")
+     "f u" '(sudo-edit-find-file :wk "Sudo find file")
+     "f U" '(sudo-edit :wk "Sudo edit file"))
 
     (mp/leader-keys
-      "g"       '(:ignore t :wk "Git")
-      "g /"     '(magit-dispatch :wk "Magit dispatch")
-      "g ."     '(magit-file-dispatch :wk "Magit file dispatch")
-      "g b"     '(magit-branch-checkout :wk "Switch branch")
+     "g"       '(:ignore t :wk "Git")
+     "g /"     '(magit-dispatch :wk "Magit dispatch")
+     "g ."     '(magit-file-dispatch :wk "Magit file dispatch")
+     "g b"     '(magit-branch-checkout :wk "Switch branch")
 
-      "g c"     '(:ignore t :wk "Create")
-      "g c b"   '(magit-branch-and-checkout :wk "Create branch and checkout")
-      "g c c"   '(magit-commit-create :wk "Create commit")
-      "g c f"   '(magit-commit-fixup :wk "Create fixup commit")
-      "g C"     '(magit-clone :wk "Clone repo")
+     "g c"     '(:ignore t :wk "Create")
+     "g c b"   '(magit-branch-and-checkout :wk "Create branch and checkout")
+     "g c c"   '(magit-commit-create :wk "Create commit")
+     "g c f"   '(magit-commit-fixup :wk "Create fixup commit")
+     "g C"     '(magit-clone :wk "Clone repo")
 
-      "g f"     '(:ignore t :wk "Find")
-      "g f c"   '(magit-show-commit :wk "Show commit")
-      "g f f"   '(magit-find-file :wk "Magit find file")
-      "g f g"   '(magit-find-git-config-file :wk "Find gitconfig file")
-      "g F"     '(magit-fetch :wk "Git fetch")
-      "g g"     '(magit-status :wk "Magit status")
-      "g i"     '(magit-init :wk "Initialize git repo")
-      "g l"     '(magit-log-buffer-file :wk "Magit buffer log")
-      "g r"     '(vc-revert :wk "Git revert file")
-      "g s"     '(magit-stage-file :wk "Git stage file")
-      "g t"     '(git-timemachine :wk "Git time machine")
-      "g u"     '(magit-stage-file :wk "Git unstage file"))
-
-    (mp/leader-keys
-      "p"      '(projectile-command-map :wk "Projectile"))
+     "g f"     '(:ignore t :wk "Find")
+     "g f c"   '(magit-show-commit :wk "Show commit")
+     "g f f"   '(magit-find-file :wk "Magit find file")
+     "g f g"   '(magit-find-git-config-file :wk "Find gitconfig file")
+     "g F"     '(magit-fetch :wk "Git fetch")
+     "g g"     '(magit-status :wk "Magit status")
+     "G G"     '(consult-git-grep :wk "Consult Git Grep")
+     "g i"     '(magit-init :wk "Initialize git repo")
+     "g l"     '(magit-log-buffer-file :wk "Magit buffer log")
+     "g r"     '(vc-revert :wk "Git revert file")
+     "g s"     '(magit-stage-file :wk "Git stage file")
+     "g t"     '(git-timemachine :wk "Git time machine")
+     "g u"     '(magit-stage-file :wk "Git unstage file"))
 
     (mp/leader-keys
-      "h"      '(:ignore t :wk "Help")
-      "h a"    '(apropos :wk "Apropose")
-      "h b"    '(describe-bindings :wk "Describe bindings")
-      "h c"    '(describe-char :wk "Describe char under cursor")
-      "h e"    '(view-echo-area-messages :wk "View echo area messages")
-      ;; "h f"    '(describe-function :wk "Describe Function")
-      "h f"    '(helpful-callable :wk "Describe Function")
-      "h F"    '(describe-face :wk "Describe Face")
-      "h g"    '(describe-gnu-project :wk "Describe GNU Project")
-      "h i"    '(info :wk "Info")
-      "h I"    '(describe-input-method :wk "Describe Input Method")
-      ;; "h k"    '(describe-key :wk "Describe key")
-      "h k"    '(helpful-key :wk "Describe key")
-      "h l"    '(view-lossage :wk "Display recent keystrokes and the commands run")
-      "h L"    '(describe-language-environment :wk "Describe language environment")
-      "h m"    '(describe-mode :wk "Describe mode")
-      "h t"    '(load-theme :wk "Load theme")
-      ;; "h v"    '(describe-variable :wk "Describe variable")
-      "h v"    '(helpful-variable :wk "Describe variable")
-      "h w"    '(where-is :wk "Prints keybinding for command if set")
-      ;; "h x"    '(describe-command :wk "Display full documentation for command")
-      "h x"    '(helpful-command :wk "Display full documentation for command")
-
-      "h d"    '(:ignore t :wk "Emacs Documentation")
-      "h d a"  '(about-emacs :wk "About Emacs")
-      "h d d"  '(view-emacs-debugging :wk "View Emacs debugging")
-      "h d f"  '(view-emacs-FAQ :wk "View Emacs FAQ")
-      "h d m"  '(info-emacs-manual :wk "The Emacs Manual")
-      "h d n"  '(view-emacs-news :wk "View Emacs News")
-      "h d o"  '(describe-distribution :wk "How to obtain Emacs")
-      "h d p"  '(view-emacs-problems :wk "View Emacs problems")
-      "h d t"  '(view-emacs-todo :wk "View Emacs todo")
-      "h d w"  '(describe-no-warranty :wk "Describe no wannanty")
-      )
+     "p"      '(projectile-command-map :wk "Projectile"))
 
     (mp/leader-keys
-      "w"      '(:ignore t :wk "Windows")
+     "h"      '(:ignore t :wk "Help")
+     "h a"    '(apropos :wk "Apropose Page")
+     "h b"    '(general-describe-keybindings :wk "General Describe bindings")
+     "h B"    '(describe-bindings :wk "Describe bindings Page")
+     "h c"    '(describe-char :wk "Describe char under cursor")
+     "h e"    '(view-echo-area-messages :wk "View echo area messages")
+     "h f"    '(helpful-callable :wk "Describe Function")
+     "h F"    '(describe-function :wk "Describe Function")
+     "h g"    '(describe-gnu-project :wk "Describe GNU Project")
+     "h i"    '(consult-info :wk "Info")
+     "h I"    '(describe-input-method :wk "Describe Input Method")
+     ;; "h k"    '(describe-key :wk "Describe key")
+     "h k"    '(helpful-key :wk "Describe key")
+     "h l"    '(view-lossage :wk "Display recent keystrokes and the commands run")
+     "h L"    '(describe-language-environment :wk "Describe language environment")
+     "h m"    '(describe-mode :wk "Describe mode")
+     "h t"    '(load-theme :wk "Load theme")
+     "h V"    '(describe-variable :wk "Describe variable")
+     "h v"    '(helpful-variable :wk "Describe variable")
+     "h w"    '(where-is :wk "Prints keybinding for command if set")
+     ;; "h x"    '(describe-command :wk "Display full documentation for command")
+     "h x"    '(helpful-command :wk "Display full documentation for command")
 
-      ;; Window splits
-      "w q"    '(evil-window-delete :wk "Close window")
-      "w u"    '(delete-other-windows :wk "Unique window")
-      "w n"    '(evil-window-new :wk "New window")
-      "w s"    '(evil-window-split :wk "Horizontal split window")
-      "w v"    '(evil-window-vsplit :wk "Vertical split window")
-
-      ;; Window motions
-      "w h"   '(evil-window-left :wk "Window left")
-      "w j"   '(evil-window-down :wk "Window down")
-      "w k"   '(evil-window-up :wk "Window up")
-      "w l"   '(evil-window-right :wk "Window right")
-      "w w"   '(evil-window-next :wk "Goto next window")
-
-      ;; Move Windows
-      "w H"   '(buf-move-left :wk "Buffer move left")
-      "w J"   '(buf-move-down :wk "Buffer move down")
-      "w K"   '(buf-move-up :wk "Buffer move up")
-      "w L"   '(buf-move-right :wk "Buffer move right"))
+     "h d"    '(:ignore t :wk "Emacs Documentation")
+     "h d a"  '(about-emacs :wk "About Emacs")
+     "h d d"  '(view-emacs-debugging :wk "View Emacs debugging")
+     "h d f"  '(view-emacs-FAQ :wk "View Emacs FAQ")
+     "h d m"  '(info-emacs-manual :wk "The Emacs Manual")
+     "h d n"  '(view-emacs-news :wk "View Emacs News")
+     "h d o"  '(describe-distribution :wk "How to obtain Emacs")
+     "h d p"  '(view-emacs-problems :wk "View Emacs problems")
+     "h d t"  '(view-emacs-todo :wk "View Emacs todo")
+     "h d w"  '(describe-no-warranty :wk "Describe no wannanty")
+     )
 
     (mp/leader-keys
-      "c"   '(:ignore t :wk "Code")
-      "c a" '(eglot-code-actions :wk "Actions")
-      "c o" '(eglot-code-action-organize-imports :wk "Organize imports")
-      "c r" '(eglot-rename :wk "Rename")
-      "c f" '(eglot-format :wk "Format")
-      "c i" '(imenu :wk "imenu"))
+     "w"      '(:ignore t :wk "Windows")
+
+     ;; Window splits
+     "w q"    '(evil-window-delete :wk "Close window")
+     "w u"    '(delete-other-windows :wk "Unique window")
+     "w n"    '(evil-window-new :wk "New window")
+     "w S"    '(evil-window-split :wk "Horizontal split window")
+     "w V"    '(evil-window-vsplit :wk "Vertical split window")
+
+     ;; Window motions
+     "w h"   '(evil-window-left :wk "Window left")
+     "w j"   '(evil-window-down :wk "Window down")
+     "w k"   '(evil-window-up :wk "Window up")
+     "w l"   '(evil-window-right :wk "Window right")
+     "w w"   '(evil-window-next :wk "Goto next window")
+
+     ;; Move Windows
+     "w H"   '(buf-move-left :wk "Buffer move left")
+     "w J"   '(buf-move-down :wk "Buffer move down")
+     "w K"   '(buf-move-up :wk "Buffer move up")
+     "w L"   '(buf-move-right :wk "Buffer move right"))
 
     (mp/leader-keys
-      "!"   '(:ignore t :wk "Flymake/Flycheck")
-      "! n" '(flycheck-next-error :wk "Next error")
-      "! p" '(flycheck-previous-error :wk "Prev error"))
+     "c"   '(:ignore t :wk "Code")
+     "c a" '(eglot-code-actions :wk "Actions")
+     "c o" '(eglot-code-action-organize-imports :wk "Organize imports")
+     "c r" '(eglot-rename :wk "Rename")
+     "c f" '(eglot-format :wk "Format")
+     "c i" '(imenu :wk "imenu"))
+
+    (mp/leader-keys
+     "!"   '(:ignore t :wk "Flymake/Flycheck")
+     "! c" '(consult-flymake :wk "Consult Flymake")
+     "! n" '(flycheck-next-error :wk "Next error")
+     "! p" '(flycheck-previous-error :wk "Prev error"))
 
     ;;,* Mode Keybindings
-    (nmap
-      :keymaps 'emacs-lisp-mode-map
-      "K" 'elisp-slime-nav-describe-elisp-thing-at-point)
+    ;; (nmap
+    ;;  :keymaps 'emacs-lisp-mode-map
+    ;;  "K" 'elisp-slime-nav-describe-elisp-thing-at-point)
 
-    (nmap
-      :keymaps 'ruby-mode-map
-      "." 'xref-find-definitions
-      "," 'xref-go-back
-      "K" 'yari)
+    ;; (nmap
+    ;;  :keymaps 'ruby-mode-map
+    ;;  "." 'xref-find-definitions
+    ;;  "," 'xref-go-back
+    ;;  "K" 'yari)
     )
 
   (provide 'init-evil)
@@ -495,250 +890,6 @@
   ;;; init-company.el ends here
 #+end_src
 
-** Defaults
-
-#+begin_src elisp :tangle ~/.emacs.d/lisp/init-defaults.el
-    ;;; init-defaults.el --- Better Emacs Defaults ;; -*- lexical-binding: t; -*-
-    ;;; Commentary:
-    ;;; Code:
-
-    (use-package emacs
-      :ensure nil
-      :demand t
-      :config
-      (prefer-coding-system 'utf-8)
-      (set-default-coding-systems 'utf-8)
-      (set-terminal-coding-system 'utf-8)
-      (set-keyboard-coding-system 'utf-8)
-
-      (electric-pair-mode +1)
-      (show-paren-mode +1)
-      (global-hl-line-mode +1)
-      (delete-selection-mode +1)
-      (subword-mode +1)
-      (save-place-mode +1)
-
-      (setq display-time-day-and-date t
-            display-time-24hr-format  t
-            display-time-default-load-average nil)
-      (display-time-mode +1)
-
-      (setq global-auto-revert-non-file-buffers t
-            auto-revert-verbose nil
-            auto-revert-use-notify nil)
-      (global-auto-revert-mode +1)
-
-      (setq-default
-       line-number-mode t
-       column-number-mode t
-       size-indication-mode t
-       fill-column 80
-       blink-cursor-interval 0.4
-       bookmark-default-file (locate-user-emacs-file ".bookmarks.el")
-       buffers-menu-max-size 30
-       case-fold-search t
-       load-prefer-newer t
-       ediff-split-window-function 'split-window-horizontally
-       ediff-window-setup-function 'ediff-setup-windows-plain
-       indent-tabs-mode nil
-       tab-width 4
-       auto-save-default nil
-       mouse-yank-at-point t
-       read-buffer-completion-ignore-case t
-       read-file-name-completion-ignore-case t
-       save-interprogram-paste-before-kill t
-       scroll-preserve-screen-position 'always
-       set-mark-command-repeat-pop t
-       tooltip-delay 1.5
-       truncate-lines nil
-       visible-bell t
-       kill-do-not-save-duplicates t
-       echo-keystrokes 0.02
-       truncate-partial-width-windows nil)
-
-      ;; Make native compilation silent and prune its cache.
-      (when (native-comp-available-p)
-        (setq native-comp-async-report-warnings-errors 'silent) ; Emacs 28 with native compilation
-        (setq native-compile-prune-cache t)) ; Emacs 29
-
-      (setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backups"))))
-      ;; (setq auto-save-file-name-transforms
-      ;;     `((".*" ,(concat user-emacs-directory "backups/") t)))
-
-      (setq x-selection-timeout 100
-            select-enable-clipboard t
-            x-select-enable-clipboard-manager nil)
-
-      ;; EMACS C
-      (setq auto-hscroll-mode 'current-line
-            auto-save-interval 64
-            auto-save-timeout 2
-            enable-recursive-minibuffers t
-            history-delete-duplicates t
-            history-length 200)
-
-      (setq backup-by-copying t
-            delete-old-versions t
-            version-control t
-            compilation-scroll-output 'first-error
-            create-lockfiles nil
-            redisplay-dont-pause t
-            confirm-kill-emacs 'y-or-n-p
-            undo-limit 800000
-            max-lisp-eval-depth 10000
-            x-stretch-cursor t)
-
-      (when *is-a-mac*
-        (setq ns-alternate-modifier 'alt
-              ns-command-modifier 'meta
-              ns-function-modifier 'hyper
-              ns-right-alternate-modifier 'none)
-        ;; Settings for the Emacs Mac-port
-        (setq mac-command-modifier 'meta
-              mac-option-modifier 'alt
-              mac-pass-command-to-system nil))
-
-      ;; Select treesitter langs
-      (setq treesit-language-source-alist
-            '((ruby "https://github.com/tree-sitter/tree-sitter-ruby")))
-
-      ;; enable features
-      (mapc (lambda (x) (put x 'disabled nil))
-            '(erase-buffer upcase-region downcase-region dired-find-alternate-file narrow-to-region)))
-
-    (use-package sudo-edit)
-
-    (use-package helpful)
-
-    (use-package savehist
-      :ensure nil
-      :config
-      (setq savehist-additional-variables '(search-ring regexp-search-ring))
-      (setq savehist-autosave-interval 60)
-      (savehist-mode +1))
-
-    (use-package recentf
-      :ensure nil
-      :config
-      (setq recentf-max-saved-items 600
-            recentf-exclude '("COMMIT_MSG" "COMMIT_EDITMSG" "github.*txt$"
-                              "[0-9a-f]\\{32\\}-[0-9a-f]\\{32\\}\\.org"
-                              ".*png$" ".*cache$"))
-      (recentf-mode 1))
-
-    (use-package buffer-move)
-
-    (use-package winner
-      :ensure nil
-      :bind (("M-N" . winner-redo)
-             ("M-P" . winner-undo))
-      :config
-      (remove-hook 'minibuffer-setup-hook 'winner-save-unconditionally)
-      (winner-mode 1))
-
-    (use-package uniquify
-      :ensure nil
-      :config
-      (setq uniquify-buffer-name-style 'forward
-            uniquify-separator "/"
-            uniquify-ignore-buffers-re "^\\*"))
-
-    (use-package display-line-numbers
-      :ensure nil
-      :hook prog-mode
-      :config
-      (setq-default
-       display-line-numbers-width 3
-       display-line-numbers 'relative
-       display-line-numbers-current-absolute t))
-
-    (use-package display-fill-column-indicator
-      :ensure nil
-      :hook prog-mode
-      :config
-      (setq-default
-       indicate-buffer-boundaries 'left
-       display-fill-column-indicator-character ?\u254e))
-
-    (use-package dired
-      :ensure nil
-      :config
-      (when *is-a-mac* (setq insert-directory-program "gls"))
-
-      (setq dired-listing-switches "-laGh1v"
-            list-directory-brief-switches "-CFh"
-            list-directory-verbose-switches "-lhG"
-            dired-recursive-deletes 'always
-            dired-recursive-copies 'always
-            dired-dwim-target t))
-
-    (use-package isearch
-      :ensure nil
-      :config
-      (setq isearch-repeat-on-direction-change t
-            isearch-wrap-pause nil
-            isearch-lazy-count t
-            lazy-count-prefix-format "[%s of %s] "
-            isearch-forward-thing-at-point '(region url email symbol sexp)
-            isearch-allow-prefix t))
-
-    (use-package multiple-cursors
-      :bind (("C->" . mc/mark-next-like-this)
-             ("C-<" . mc/mark-previous-like-this)
-             ("C-c C-<" . mc/mark-all-like-this)))
-
-    (use-package avy
-      :bind ("C-j" . avy-goto-char-timer)
-      :config
-      (setq avy-timeout-seconds 0.25))
-
-    (use-package ace-window
-      :bind ("M-o" . ace-window)
-      :config
-      (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
-
-    (use-package ibuffer
-      :ensure nil
-      :bind (("C-x C-b" . ibuffer)))
-
-    (use-package expand-region
-      :bind ("C-=" . er/expand-region))
-
-    (use-package which-key
-      :demand t
-      :config
-      (which-key-mode))
-
-    (use-package crux
-      :bind (
-             ("C-o" . crux-smart-open-line)
-             ("C-S-o" . crux-smart-open-line-above)
-             ("C-k" . crux-smart-kill-line)
-             ("C-<backspace>". crux-kill-line-backwards)
-             ("M-<down>" . crux-duplicate-current-line-or-region)
-             ("M-S-<down>" . crux-duplicate-and-comment-current-line-or-region)
-             ("C-c K" . crux-kill-other-buffers)
-             ("M-j" . crux-top-join-line)
-
-             ([remap move-beginning-of-line] . crux-move-beginning-of-line)
-             ([remap kill-whole-line] . crux-kill-whole-line)))
-
-    (use-package rainbow-delimiters
-      :hook prog-mode
-      ;; :diminish rainbow-mode
-      )
-
-    ;; Smartparens
-    ;; (require 'smartparens-config)
-    ;; (setq show-paren-delay 0)
-    ;; (setq sp-highlight-pair-overlay nil)
-    ;; (add-hook 'prog-mode-hook #'smartparens-mode)
-    ;; (add-hook 'text-mode-hook #'smartparens-mode)
-
-    (provide 'init-defaults)
-    ;;; init-defaults.el ends here
-#+end_src
-
 ** Themes
 
 #+begin_src elisp :tangle ~/.emacs.d/lisp/init-themes.el
@@ -746,13 +897,11 @@
   ;;; Commentary:
   ;;; Code:
 
-  (use-package modus-themes)
-  (use-package base16-theme)
-
-  ;;(load-theme 'base16-ashes t)
-  (load-theme 'modus-vivendi t)
-
-  (set-face-attribute 'default nil :font "Iosevka" :height 130)
+  (use-package modus-themes
+    :demand t
+    :config
+    (load-theme 'modus-vivendi t)
+    (set-face-attribute 'default nil :font "Iosevka" :height 130))
 
   (provide 'init-themes)
   ;;; init-themes.el ends here
@@ -787,9 +936,7 @@
   ;;; Commentary:
   ;;; Code:
 
-  (use-package magit
-    :config
-    (setq magit-completing-read-function #'magit-ido-completing-read))
+  (use-package magit)
 
   (provide 'init-git)
   ;;; init-git.el ends here
@@ -805,9 +952,6 @@
   ;;; Code:
 
   (require 'org)
-  (setq org-completion-use-ido t
-        org-outline-path-complete-in-steps nil)
-
   (use-package org-pomodoro)
 
   (provide 'init-org)
@@ -1057,7 +1201,6 @@
   (provide 'init-markdown)
   ;;; init-markdown.el ends here
 #+end_src
-
 
 ** Miscellaneous
 

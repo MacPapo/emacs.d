@@ -17,7 +17,7 @@
 (eval-when-compile
   (require 'use-package))
 (setq use-package-always-ensure t
-      use-package-always-defer t)
+      use-package-always-defer nil)
 
 ;; Set up custom file
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
@@ -25,7 +25,8 @@
   (load custom-file))
 
 ;; Completions
-(require 'init-ido)
+(require 'init-base)
+(require 'init-vertico)
 (require 'init-evil)
 (require 'init-company)
 
