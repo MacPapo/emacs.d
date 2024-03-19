@@ -4,10 +4,10 @@
 
 ;;; Code:
 (defconst *is-a-mac* (eq system-type 'darwin))
-(defconst *rvm-installed* (and (file-directory-p "~/.rvm")
-                               (file-executable-p "~/.rvm/bin/rvm")))
 
 (setq package-enable-at-startup nil)
+(setq inhibit-default-init nil)
+(setq native-comp-async-report-warnings-errors nil)
 
 ;; PERF: A second, case-insensitive pass over `auto-mode-alist' is time wasted.
 (setq auto-mode-case-fold nil)
@@ -45,10 +45,6 @@
 ;; usage, however!
 (setq inhibit-compacting-font-caches t)
 
-;; Increase how much is read from processes in a single chunk (default is 4kb).
-;; This is further increased elsewhere, where needed (like our LSP module).
-(setq read-process-output-max (* 2 1024 1024)) ; 2 MiB
-
 ;; Introduced in Emacs HEAD (b2f8c9f), this inhibits fontification while
 ;; receiving input, which should help a little with scrolling performance.
 (setq redisplay-skip-fontification-on-input t)
@@ -65,6 +61,8 @@
 (push '(menu-bar-lines . 0)   default-frame-alist)
 (push '(tool-bar-lines . 0)   default-frame-alist)
 (push '(vertical-scroll-bars) default-frame-alist)
+
+(setq server-client-instructions nil)
 
 ;; And set these to nil so users don't have to toggle the modes twice to
 ;; reactivate them.
@@ -88,15 +86,20 @@
 (setq frame-resize-pixelwise t
       frame-inhibit-implied-resize t
       frame-title-format '("%b")
-      ring-bell-function 'ignore
       use-dialog-box t ; only for mouse events, which I seldom use
       use-file-dialog nil
       use-short-answers t
       inhibit-splash-screen t
-      inhibit-startup-screen t
       inhibit-x-resources t
       inhibit-startup-echo-area-message user-login-name ; read the docstring
       inhibit-startup-buffer-menu t)
+
+(advice-add #'x-apply-session-resources :override #'ignore)
+
+(setq desktop-restore-forces-onscreen nil)
+
+(setq ring-bell-function #'ignore
+      inhibit-startup-screen t)
 
 (setq default-input-method nil)
 (global-so-long-mode 1)
@@ -107,14 +110,31 @@
 (setq window-resize-pixelwise t
       initial-scratch-message ";; Happy Hacking\n\n")
 
-;; Reduce the frequency of garbage collection
-(setq gc-cons-threshold (* 1024 1024 80))
+(defvar default-file-name-handler-alist file-name-handler-alist)
+(setq file-name-handler-alist nil)
 
-(add-hook 'after-init-hook
-          (lambda ()
-            ;; Restore after startup
-            (setq gc-cons-threshold 800000)
-            (setq gc-cons-percentage 0.1)))
+;; Reduce the frequency of garbage collection
+(setq gc-cons-threshold most-positive-fixnum
+      gc-cons-percentage 1)
+
+(defun +gc-after-focus-change ()
+  "Run GC when frame loses focus."
+  (run-with-idle-timer
+   5 nil
+   (lambda () (unless (frame-focus-state) (garbage-collect)))))
+
+(defun +reset-init-values ()
+  (run-with-idle-timer
+   1 nil
+   (lambda ()
+     (setq file-name-handler-alist default-file-name-handler-alist
+           gc-cons-percentage 0.1
+           gc-cons-threshold 8000000)
+     (message "gc-cons-threshold & file-name-handler-alist restored")
+     (when (boundp 'after-focus-change-function)
+       (add-function :after after-focus-change-function #'+gc-after-focus-change)))))
+
+(add-hook 'after-init-hook '+reset-init-values)
 
 (provide 'early-init)
 ;;; early-init.el ends here
