@@ -85,6 +85,9 @@
 
 (use-package dashboard
   :demand t
+  :custom
+  (dashboard-center-content t)
+  (dashboard-navigation-cycle t)
   :config
   (dashboard-setup-startup-hook))
 
@@ -181,6 +184,11 @@
   (evil-want-C-i-jump t)
   (evil-search-module 'evil-search "use vim-like search instead of 'isearch")
   (evil-undo-system 'undo-redo)
+  (evil-ex-search-vim-style-regexp t)
+  (evil-ex-visual-char-range t)
+  (evil-ex-interactive-search-highlight 'selected-window)
+  (evil-kbd-macro-suppress-motion-error t)
+  (evil-visual-update-x-selection-p nil)
   :config
   ;;I want Emacs regular mouse click behavior
   (define-key evil-motion-state-map [down-mouse-1] nil)
@@ -214,6 +222,8 @@
   :after (evil)
   :custom
   (evil-snipe-scope 'visible)
+  (evil-snipe-char-fold t)
+  (evil-snipe-smart-case t)
   :config
   (evil-snipe-mode +1))
 
@@ -226,6 +236,21 @@
   :after (evil)
   :config
   (evil-lion-mode +1)) ;; gl MOTION CHAR
+
+(use-package evil-nerd-commenter
+  :after (evil)
+  :config
+  (evilnc-default-hotkeys))
+
+(use-package evil-surround
+  :after (evil)
+  :config
+  (global-evil-surround-mode +1))
+
+(use-package evil-matchit
+  :after (evil)
+  :config
+  (global-evil-matchit-mode +1))
 
 (use-package evil-anzu
   :after (evil anzu))
@@ -280,6 +305,8 @@
   (corfu-cycle t)
   (corfu-auto-delay 0.2)
   (corfu-auto-prefix 2)
+  (corfu-count 10)
+  (corfu-max-width 120)
   (corfu-preview-current t)
   (corfu-preselect 'valid)
   (corfu-quit-no-match t)
@@ -297,7 +324,10 @@
 
 (use-package cape
   :after (corfu)
-  :commands (cape-file))
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-abbrev)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-file))
 
 ;; Snippets
 (use-package tempel
@@ -322,7 +352,8 @@
   (add-hook 'text-mode-hook 'tempel-setup-capf))
 
 (use-package tempel-collection
-  :defer t)
+  :defer t
+  :after (tempel))
 
 (use-package eglot-tempel
   :defer t)
