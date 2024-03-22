@@ -40,6 +40,16 @@
     ((font-exists-p "Menlo") (set-frame-font "Menlo:spacing=100:size=13" nil t))))
 
 (when *is-a-mac*
+  (setq mac-mouse-wheel-smooth-scroll nil)
+
+  ;; Usefull
+  (use-package reveal-in-osx-finder
+    :defer t)
+
+  (use-package osx-trash
+    :defer t)
+
+  ;; GNU utils
   (let ((gls (executable-find "gls")))
     (when gls (setq insert-directory-program gls))))
 
@@ -67,8 +77,19 @@
   (setq completion-cycle-threshold 3
         tab-always-indent 'complete))
 
+(use-package organic-green-theme
+  :defer t)
+
 (use-package diminish
   :defer 10)
+
+(use-package dashboard
+  :demand t
+  :config
+  (dashboard-setup-startup-hook))
+
+(use-package sudo-edit
+  :defer t)
 
 (use-feature display-line-numbers
   :defer t
@@ -90,8 +111,8 @@
                  empty-bullet ?◦)
               'triple-pipe)))
 
-(use-feature electric-pair
-  :defer 1
+(use-feature electric
+  :demand t
   :config
   (electric-pair-mode +1))
 
@@ -134,10 +155,10 @@
 
 (use-feature trwhitespace
   :defer t
-  :hook ((prog-mode-hook . my/show-trailing-whitespace)
-         (text-mode-hook . my/show-trailing-whitespace)
-         (conf-mode-hook . my/show-trailing-whitespace))
-  :init (setq-default show-trailing-whitespace)
+  :hook
+  ((prog-mode-hook text-mode-hook conf-mode-hook) . my/show-trailing-whitespace)
+  :init
+  (setq-default show-trailing-whitespace)
   :config
   (defun my/show-trailing-whitespace ()
     "Enable display of trailing whitespace."
@@ -175,6 +196,37 @@
   (evil-collection-elpaca-want-g-filters nil)
   (evil-collection-ement-want-auto-retro t))
 
+(use-package goto-chg
+  :after (evil))
+
+(use-package vi-tilde-fringe
+  :diminish vi-tilde-fringe-mode
+  :defer 2
+  :config
+  (global-vi-tilde-fringe-mode +1))
+
+;; Write me
+(use-package evil-visual-mark-mode
+  :defer t)
+
+(use-package evil-snipe
+  :diminish evil-snipe-local-mode
+  :after (evil)
+  :custom
+  (evil-snipe-scope 'visible)
+  :config
+  (evil-snipe-mode +1))
+
+(use-package evil-multiedit
+  :after (evil)
+  :config
+  (evil-multiedit-default-keybinds)) ;; M-d and M-D
+
+(use-package evil-lion
+  :after (evil)
+  :config
+  (evil-lion-mode +1)) ;; gl MOTION CHAR
+
 (use-package evil-anzu
   :after (evil anzu))
 
@@ -185,6 +237,7 @@
   (global-anzu-mode))
 
 (use-feature dired
+  :defer 1
   :commands (dired)
   :custom
   (dired-dwim-target t)
@@ -223,14 +276,14 @@
 (use-package corfu
   :defer 5
   :custom
+  (corfu-auto t)
   (corfu-cycle t)
   (corfu-auto-delay 0.2)
   (corfu-auto-prefix 2)
-  (corfu-auto t)
+  (corfu-preview-current t)
+  (corfu-preselect 'valid)
   (corfu-quit-no-match t)
   (corfu-quit-at-boundary t)
-  (corfu-preview-current t)
-  (corfu-preselect 'prompt)
   (corfu-scroll-margin 5)
   :bind (:map corfu-map
               ("TAB" . corfu-next)
@@ -246,6 +299,34 @@
   :after (corfu)
   :commands (cape-file))
 
+;; Snippets
+(use-package tempel
+  :defer 2
+  :custom
+  (tempel-trigger-prefix "<")
+  :init
+  (defun tempel-setup-capf ()
+    ;; Add the Tempel Capf to `completion-at-point-functions'.
+    ;; `tempel-expand' only triggers on exact matches. Alternatively use
+    ;; `tempel-complete' if you want to see all matches, but then you
+    ;; should also configure `tempel-trigger-prefix', such that Tempel
+    ;; does not trigger too often when you don't expect it. NOTE: We add
+    ;; `tempel-expand' *before* the main programming mode Capf, such
+    ;; that it will be tried first.
+    (setq-local completion-at-point-functions
+                (cons #'tempel-complete
+                      completion-at-point-functions)))
+
+  (add-hook 'conf-mode-hook 'tempel-setup-capf)
+  (add-hook 'prog-mode-hook 'tempel-setup-capf)
+  (add-hook 'text-mode-hook 'tempel-setup-capf))
+
+(use-package tempel-collection
+  :defer t)
+
+(use-package eglot-tempel
+  :defer t)
+
 ;;; Git
 (use-package magit
   :defer t
@@ -254,6 +335,21 @@
   (magit-diff-refine-hunk 'all)
   :config
   (transient-bind-q-to-quit))
+
+(use-package git-modes
+  :defer t
+  :config
+  (add-to-list 'auto-mode-alist
+               (cons "/.dockerignore\\'" 'gitignore-mode)))
+
+(use-package gitignore-templates
+  :defer t
+  :custom
+  (gitignore-templates-api 'github))
+
+;;; Org
+(use-package org-pomodoro
+  :defer t)
 
 ;;; Programming
 
@@ -264,6 +360,9 @@
   :custom
   (eldoc-echo-area-use-multiline-p nil)
   (eldoc-idle-delay 0.75))
+
+(use-package devdocs
+  :defer t)
 
 ;; LSP
 (use-package eglot
@@ -285,10 +384,57 @@
   (add-to-list 'projectile-globally-ignored-directories "*node_modules")
   (projectile-mode +1))
 
+(use-package license-templates
+  :defer t)
+
+(use-package dotenv-mode
+  :defer t
+  :mode ("\\.env\\..*\\'" . dotenv-mode))
+
+(use-package ssh-config-mode
+  :defer t)
+
+(use-package editorconfig
+  :diminish editorconfig-mode
+  :defer 5
+  :config
+  (editorconfig-mode +1))
+
+(use-package editorconfig-generate
+  :defer t)
+
+(use-package rainbow-delimiters
+  :defer t
+  :hook prog-mode)
+
+(use-package highlight-numbers
+  :defer t
+  :hook prog-mode)
+
+(use-package highlight-escape-sequences
+  :defer t
+  :hook (prog-mode . hes-mode))
+
+(use-package highlight-indentation
+  :diminish highlight-indentation-mode
+  :defer t
+  :hook prog-mode
+  :custom
+  (set-face-background 'highlight-indentation-face "#e3e3d3")
+  (set-face-background 'highlight-indentation-current-column-face "#c3b3b3"))
+
 (use-package lorem-ipsum
   :defer t)
 
 ;; Languags
+
+;; YAML
+(use-package yaml-mode
+  :defer t)
+
+;; DATA
+(use-package csv-mode
+  :defer t)
 
 ;; Markdown
 (use-package markdown-mode
@@ -302,6 +448,18 @@
   ;; (markdown-command "/usr/bin/pandoc")
   )
 
+;; NGINX
+(use-package nginx-mode
+  :defer t)
+
+;; APACHE
+(use-package apache-mode
+  :defer t)
+
+;; GRAPHQL
+(use-package graphql-mode
+  :defer t)
+
 ;; RUBY
 (use-package rbenv
   :defer 10
@@ -309,8 +467,28 @@
   (setq rbenv-installation-dir "/opt/homebrew/opt/rbenv")
   (global-rbenv-mode))
 
+(use-package projectile-rails
+  :defer t)
+
+(use-package ruby-end
+  :diminish ruby-end-mode
+  :defer t)
+
+(use-package rake
+  :defer t)
+
+(use-package yari
+  :defer t)
+
+(use-package bundler
+  :defer t)
+
+(use-package rubocop
+  :defer t)
+
 ;; LISP
 (use-package sly
+  :defer t
   :commands sly
   :config
   (setq sly-protocol-version 'ignore)
@@ -318,6 +496,10 @@
   (let ((features '(sly-fancy)))
     (sly-setup features))
   (setq inferior-lisp-program "/opt/homebrew/opt/sbcl"))
+
+(use-package highlight-quoted
+  :defer t
+  :hook emacs-lisp-mode-hook)
 
 ;; WEB
 (use-package web-mode
@@ -329,6 +511,10 @@
          ("\\.erb\\'" . web-mode)
          ("\\.mustache\\'" . web-mode)
          ("\\.djhtml\\'" . web-mode)))
+
+(use-package emmet-mode
+  :defer t
+  :hook ((sgml-mode css-mode) . emmet-mode))
 
 (use-package coffee-mode
   :defer t
@@ -343,5 +529,40 @@
 
 (use-package slim-mode
   :defer t)
+
+;; Write me
+(use-package json-snatcher
+  :defer t)
+
+;; SQL
+(use-package sqlup-mode
+  :defer t
+  :hook ((sql-mode sql-interactive-mode) . sqlup-mode))
+
+;; C/C++
+(use-package modern-cpp-font-lock
+  :defer t
+  :hook (c++-mode . modern-c++-font-lock-mode))
+
+;; ASM/NASM
+(use-package nasm-mode
+  :defer t)
+
+;;; MISC
+;; FIX ME
+(use-package speed-type
+  :defer t)
+
+(use-package eshell-toggle
+  :defer t
+  :custom
+  (eshell-toggle-size-fraction 3)
+  (eshell-toggle-use-projectile-root t)
+  (eshell-toggle-run-command nil)
+  (eshell-toggle-init-function #'eshell-toggle-init-ansi-term))
+
+(use-package neotree
+  :defer t
+  :bind ([f8] . neotree-toggle))
 
 ;;; init.el ends here
