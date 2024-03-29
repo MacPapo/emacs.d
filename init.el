@@ -56,6 +56,8 @@
 (use-feature emacs
   :demand t
   :custom
+  (confirm-kill-emacs 'yes-or-no-p)
+  (use-short-answers t)
   (enable-recursive-minibuffers t "Allow minibuffer commands in minibuffer")
   (frame-title-format '(buffer-file-name "%f" ("%b"))
                       "Make frame title current file's name.")
@@ -73,13 +75,16 @@
   (auto-save-default nil)
   (make-backup-files nil)
   (scroll-preserve-screen-position 'always)
+  (use-dialog-box nil)
   :init
   (setq completion-cycle-threshold 3
         tab-always-indent 'complete))
 
+;; THEME
 (use-package organic-green-theme
   :defer t)
 
+;; MISC
 (use-package diminish
   :defer 10)
 
@@ -119,6 +124,18 @@
   :config
   (electric-pair-mode +1))
 
+(use-feature savehist
+  :defer 1
+  :custom
+  (history-length 25)
+  :config
+  (savehist-mode +1))
+
+(use-feature saveplace
+  :defer 1
+  :config
+  (save-place-mode +1))
+
 (use-feature autorevert
   :defer 2
   :custom
@@ -128,12 +145,50 @@
   :config
   (global-auto-revert-mode t))
 
+(use-feature help
+  :defer 1
+  :custom
+  (help-window-select t "Always select the help window"))
+
+(use-feature holidays
+  :commands (org-agenda)
+  :custom
+  (holiday-bahai-holidays nil)
+  (holiday-hebrew-holidays nil)
+  (holiday-islamic-holidays nil)
+  (holiday-oriental-holidays nil))
+
+(use-feature compile
+  :commands (compile recompile)
+  :custom (compilation-scroll-output 'first-error)
+  :config
+  (defun +compilation-colorize ()
+    "Colorize from `compilation-filter-start' to `point'."
+    (require 'ansi-color)
+    (let ((inhibit-read-only t))
+      (ansi-color-apply-on-region (point-min) (point-max))))
+  (add-hook 'compilation-filter-hook #'+compilation-colorize))
+
 (use-feature recentf
   :defer 1
-  :config (recentf-mode)
+  :config
+  (recentf-mode +1)
   :custom
   (recentf-max-menu-items 1000 "Offer more recent files in menu")
   (recentf-max-saved-items 1000 "Save more recent files"))
+
+(use-feature time
+  :custom
+  (display-time-day-and-date t "Show date, day, and time")
+  (display-time-24hr-format t "Show time as 24H format")
+  (display-time-default-load-average nil "Dont show load avg")
+  :config
+  (display-time))
+
+(use-feature paren
+  :defer 1
+  :config
+  (show-paren-mode +1))
 
 (use-feature winner
   :defer 5
@@ -155,6 +210,24 @@
   (uniquify-separator " • ")
   (uniquify-after-kill-buffer-p t)
   (uniquify-ignore-buffers-re "^\\*"))
+
+(use-feature tab-bar
+  :custom
+  (tab-bar-close-button-show nil "Dont show the x button on tabs")
+  (tab-bar-new-button-show nil)
+  (tab-bar-show 1 "only show tab bar when more than one tab"))
+
+(use-feature tab-line
+  :custom
+  (tab-line-close-button-show nil)
+  (tab-line-new-button-show   nil))
+
+(use-feature ediff
+  :defer t
+  :hook (ediff-quit . winner-undo)
+  :custom
+  (ediff-window-setup-function #'ediff-setup-windows-plain)
+  (ediff-split-window-function #'split-window-horizontally))
 
 (use-feature trwhitespace
   :defer t
@@ -192,7 +265,130 @@
   :config
   ;;I want Emacs regular mouse click behavior
   (define-key evil-motion-state-map [down-mouse-1] nil)
-  (evil-mode +1))
+
+  ;;;Leader
+  (define-prefix-command 'my-leader-map)
+
+  (keymap-set evil-motion-state-map "SPC" 'my-leader-map)
+  (keymap-set evil-normal-state-map "SPC" 'my-leader-map)
+
+  (evil-define-key nil my-leader-map
+    ;; General
+    "SPC" 'execute-extended-command
+    "/"   'occur
+    "!"   'shell-command
+    ":"   'eval-expression
+    "."   'repeat
+
+    ;; Buffers
+    "bb"  'consult-buffer
+    "bk"  'kill-current-buffer
+    "bo"  '(lambda () (interactive) (switch-to-buffer nil))
+    "TAB" '(lambda () (interactive) (switch-to-buffer nil))
+    "bp"  'previous-buffer
+    "bn"  'next-buffer
+    "br"  'rename-buffer
+    "bR"  'revert-buffer
+    "bM"  '(lambda () (interactive) (switch-to-buffer "*Messages*"))
+    "bs"  'scratch-buffer
+
+    ;; Dired
+    "dd" 'dired
+    "dj" 'dired-jump
+
+    ;; Bookmarks
+    "Bb" 'consult-bookmark
+    "Bj" 'bookmark-jump 
+    "Bs" 'bookmark-set
+    "Bk" 'bookmark-delete
+    "BK" 'bookmark-delete-all
+
+    ;; Eval
+    "ee" 'eval-expression
+    "eb" 'eval-buffer
+    "ed" 'eval-defun
+    "es" 'eval-last-sexp
+    "ep" 'pp-eval-last-sexp
+
+    "ff" 'find-file
+    "fl" '(lambda (&optional arg)
+            (interactive "P")
+            (call-interactively
+             (if arg
+                 #'find-library-other-window #'find-library)))
+    "fp" 'find-function-at-point
+    "fP" 'find-function
+    "fR" 'rename-file-and-buffer
+    "fs" 'save-buffer
+    "fv" 'find-variable-at-point
+    "fV" 'find-variable
+
+    ;; Quit
+    "qq" 'save-buffers-kill-emacs
+    "qr" 'restart-emacs
+    "qQ" 'kill-emacs
+
+    ;; Window
+    "w"  'evil-window-map
+    "wU" 'winner-undo
+    "wR" 'winner-redo
+
+    ;; Text
+    "xi" 'insert-char
+
+    ;; Tab
+    "tb" 'tab-bar-history-back
+    "tf" 'tab-bar-history-forward
+    "tp" 'tab-bar-switch-to-prev-tab
+    "tn" 'tab-bar-switch-to-next-tab
+    "tk" 'tab-bar-close-tab
+    "tu" 'tab-bar-undo-close-tab
+    "tr" 'tab-bar-rename-tab
+    "tt" 'tab-bar-switch-to-tab
+    "tN" 'tab-bar-new-tab
+    "tL" '(lambda (arg) (interactive "p") (tab-bar-move-tab arg))
+    "tH" '(lambda (arg) (interactive "p") (tab-bar-move-tab (- arg)))
+
+    ;; Projectile
+    "p!" 'projectile-run-shell-command-in-root
+    "p&" 'projectile-run-async-shell-command-in-root 
+    "p%" 'projectile-replace-regexp
+    "pA" 'projectile-toggle-between-implementation-and-test
+    "pN" 'projectile-next-project-buffer
+    "pP" 'projectile-previous-project-buffer
+    "pp" 'projectile-switch-project
+    "pb" 'projectile-switch-to-buffer
+    "ps" 'projectile-save-project-buffers
+    "pf" 'projectile-find-file
+    "pd" 'projectile-dired
+    "pi" 'projectile-ibuffer
+    "pT" 'projectile-test-project
+    "pG" 'projectile-regenerate-tags
+    "pI" 'projectile-invalidate-cache
+    "pk" 'projectile-kill-buffers
+    "pe" 'projectile-run-eshell
+    "pc" 'projectile-run-project
+    "pC" 'projectile-compile-project
+    "p/" 'projectile-multi-occur
+    "pr" 'projectile-ripgrep
+    "pg" 'projectile-grep
+    "pR" 'projectile-replace
+    "pX" 'projectile-replace-regexp
+
+    ;; Git
+    "gg" 'magit-status
+    "gb" 'magit-branch
+    "gc" 'magit-clone
+    "gB" 'magit-blame
+    "gf" 'magit-find-file
+    "gl" 'magit-log-buffer-file
+    "gi" 'magit-init
+    "gL" 'magit-list-repositories
+    "gm" 'magit-dispatch
+    "gS" 'magit-stage-file
+    "gU" 'magit-unstage-file
+    )
+  (evil-mode +1)) ;; g ; evil-goto-last-change
 
 (use-package evil-collection
   :after (evil)
@@ -203,9 +399,6 @@
   :custom
   (evil-collection-elpaca-want-g-filters nil)
   (evil-collection-ement-want-auto-retro t))
-
-(use-package goto-chg
-  :after (evil))
 
 (use-package vi-tilde-fringe
   :diminish vi-tilde-fringe-mode
@@ -271,6 +464,12 @@
   (dired-omit-files "\\(?:\\.+[^z-a]*\\)")
   :hook (dired-mode-hook . dired-omit-mode))
 
+(use-package rg
+  :defer t)
+
+(use-package wgrep
+  :defer t)
+
 (use-package which-key
   :demand t
   :init
@@ -296,6 +495,9 @@
   :defer 2
   :config
   (marginalia-mode +1))
+
+(use-package consult
+  :after (vertico marginalia))
 
 ;; Buffer Completion
 (use-package corfu
@@ -361,7 +563,6 @@
 ;;; Git
 (use-package magit
   :defer t
-  ;;:after (general)
   :custom
   (magit-diff-refine-hunk 'all)
   :config
@@ -410,9 +611,7 @@
 ;; Tools
 (use-package projectile
   :defer 10
- ;; :after (general)
   :config
-  (add-to-list 'projectile-globally-ignored-directories "*node_modules")
   (projectile-mode +1))
 
 (use-package license-templates
