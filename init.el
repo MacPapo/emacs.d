@@ -274,7 +274,6 @@
 
   (evil-define-key nil my-leader-map
     ;; General
-    "SPC" 'execute-extended-command
     "/"   'occur
     "!"   'shell-command
     ":"   'eval-expression
@@ -282,9 +281,9 @@
 
     ;; Buffers
     "bb"  'consult-buffer
-    "bk"  'kill-current-buffer
+    "bk"  'kill-buffer
+    "bK"  'kill-current-buffer
     "bo"  '(lambda () (interactive) (switch-to-buffer nil))
-    "TAB" '(lambda () (interactive) (switch-to-buffer nil))
     "bp"  'previous-buffer
     "bn"  'next-buffer
     "br"  'rename-buffer
@@ -310,6 +309,7 @@
     "es" 'eval-last-sexp
     "ep" 'pp-eval-last-sexp
 
+    ;; Find file
     "ff" 'find-file
     "fl" '(lambda (&optional arg)
             (interactive "P")
@@ -725,7 +725,7 @@
   (setq sly-net-coding-system 'utf-8-unix)
   (let ((features '(sly-fancy)))
     (sly-setup features))
-  (setq inferior-lisp-program "/opt/homebrew/opt/sbcl"))
+  (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
 
 (use-package highlight-quoted
   :defer t
