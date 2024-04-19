@@ -76,16 +76,15 @@
 ;;   GUI frames, but keep it disabled in terminal frames because there it
 ;;   activates an ugly, in-frame menu bar.
 (when *is-a-mac*
-  (add-hook 'window-setup-hook 'doom-restore-menu-bar-in-gui-frames-h)
-  (add-hook 'after-make-frame-functions 'doom-restore-menu-bar-in-gui-frames-h)
-  (defun doom-restore-menu-bar-in-gui-frames-h (&optional frame)
+  (add-hook 'window-setup-hook 'restore-menu-bar-in-gui-frames-h)
+  (add-hook 'after-make-frame-functions 'restore-menu-bar-in-gui-frames-h)
+  (defun restore-menu-bar-in-gui-frames-h (&optional frame)
     (let ((use-frame (or frame (selected-frame))))
       (when (display-graphic-p use-frame)
         (set-frame-parameter use-frame 'menu-bar-lines 1)))))
 
 (setq frame-resize-pixelwise t
       frame-inhibit-implied-resize t
-      frame-title-format '("%b")
       use-dialog-box t ; only for mouse events, which I seldom use
       use-file-dialog nil
       use-short-answers t
@@ -93,6 +92,17 @@
       inhibit-x-resources t
       inhibit-startup-echo-area-message user-login-name ; read the docstring
       inhibit-startup-buffer-menu t)
+
+(setq user-full-name    "Jacopo Costantini"
+      user-mail-address "jacopocostantini32@gmail.com")
+
+;; Don't disable narrowing commands
+(put 'narrow-to-region 'disabled nil)
+(put 'narrow-to-page 'disabled nil)
+(put 'narrow-to-defun 'disabled nil)
+;; Don't disable case-change functions
+(put 'upcase-region 'disabled nil)
+(put 'downcase-region 'disabled nil)
 
 (advice-add #'x-apply-session-resources :override #'ignore)
 
@@ -109,6 +119,8 @@
 
 (setq window-resize-pixelwise t
       initial-scratch-message ";; Happy Hacking\n\n")
+
+(setq read-process-output-max (* 2 1024 1024)) ;; 2mb
 
 (defvar default-file-name-handler-alist file-name-handler-alist)
 (setq file-name-handler-alist nil)
