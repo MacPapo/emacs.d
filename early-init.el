@@ -28,7 +28,15 @@
 
 (setq package-enable-at-startup nil)
 (setq inhibit-default-init nil)
-(setq native-comp-async-report-warnings-errors nil)
+
+(setq native-comp-deferred-compilation t
+      native-comp-async-query-on-exit t
+      native-comp-async-jobs-number 4
+      native-comp-async-report-warnings-errors 'silent)
+
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("gnu"   . "https://elpa.gnu.org/packages/")
+                         ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
 
 ;; PERF: A second, case-insensitive pass over `auto-mode-alist' is time wasted.
 (setq auto-mode-case-fold nil)
@@ -121,6 +129,7 @@
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)
 (put 'narrow-to-defun 'disabled nil)
+
 ;; Don't disable case-change functions
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)

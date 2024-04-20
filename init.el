@@ -24,8 +24,6 @@
 
 ;;; Code:
 
-(require 'package)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
 
 ;; Bootstrap `use-package`
@@ -87,14 +85,15 @@ NAME and ARGS are in `use-package'."
   :custom
   (blink-cursor-interval 0.4)
   (confirm-kill-emacs 'yes-or-no-p)
-  (enable-recursive-minibuffers t "Allow minibuffer commands in minibuffer")
   (find-library-include-other-files nil)
   (indent-tabs-mode nil "Use spaces, not tabs")
   (history-delete-duplicates t "Don't clutter history")
+  (history-length 100)
   (kill-do-not-save-duplicates t)
   (completion-styles '(hotfuzz basic emacs22))
   (report-emacs-bug-no-explanations t)
   (report-emacs-bug-no-confirmation t)
+  (require-final-newline t)
   (bookmark-default-file (locate-user-emacs-file ".bookmarks.el"))
   (buffers-menu-max-size 30)
   (case-fold-search t)
@@ -113,16 +112,26 @@ NAME and ARGS are in `use-package'."
   (frame-title-format
    '(buffer-file-name "%f" ("%b")) "Make frame title current file's name.")
   :config
+  (put 'file-name-history 'history-length 1000)
+  (put 'extended-command-history 'history-length 50)
   (prefer-coding-system 'utf-8)
   (set-default-coding-systems 'utf-8)
   (set-terminal-coding-system 'utf-8)
   (set-keyboard-coding-system 'utf-8))
+
+(use-feature mb-depth
+  :after (emacs)
+  :custom
+  (enable-recursive-minibuffers t "Allow minibuffer commands in minibuffer")
+  :config
+  (minibuffer-depth-indicate-mode +1))
 
 (use-feature whitespace
   :demand t
   :diminish (whitespace-mode)
   :hook (prog-mode)
   :custom
+  (whitespace-line-column 80)
   (whitespace-action
    '(cleanup auto-cleanup))
   (whitespace-style
@@ -179,6 +188,8 @@ NAME and ARGS are in `use-package'."
 
 (use-feature paren
   :after (emacs)
+  :custom
+  (show-paren-ring-bell-on-mismatch t)
   :config
   (show-paren-mode +1))
 
@@ -233,6 +244,7 @@ NAME and ARGS are in `use-package'."
   :after (emacs)
   :custom
   (version-control t)
+  (vc-make-backup-files nil)
   (delete-old-versions t)
   (kept-new-versions 6)
   (kept-old-versions 2)
@@ -299,12 +311,25 @@ NAME and ARGS are in `use-package'."
   :defer 4
   :custom
   (tramp-inline-compress-start-size 1000000)
-  (tramp-default-method "ssh"))
+  (tramp-default-method "ssh")
+  (tramp-backup-directory-alist backup-directory-alist))
 
 (use-feature winner
   :defer 5
   :bind (("M-N" . winner-undo)
          ("M-P" . winner-redo))
+  :custom
+  (winner-boring-buffers '("*Completions*"
+                           "*Compile-Log*"
+                           "*inferior-lisp*"
+                           "*Fuzzy Completions*"
+                           "*Apropos*"
+                           "*Help*"
+                           "*cvs*"
+                           "*Buffer List*"
+                           "*Ibuffer*"
+                           "*mu4e-loading*"
+                           ))
   :config
   (winner-mode +1))
 
@@ -354,6 +379,16 @@ NAME and ARGS are in `use-package'."
   (ediff-window-setup-function #'ediff-setup-windows-plain)
   (ediff-split-window-function #'split-window-horizontally))
 
+(use-feature man
+  :after (emacs)
+  :custom
+  (Man-notify-method 'pushy))
+
+(use-feature woman
+  :after (emacs)
+  :custom
+  (woman-use-own-frame nil))
+
 (use-feature vc-hooks
   :defer 2
   :custom
@@ -366,7 +401,10 @@ NAME and ARGS are in `use-package'."
          ("M-Z"     . zap-up-to-char)
          ("C-."     . set-mark-command)
          ("C-x C-." . pop-global-mark)
-         ("M-j"     . join-line)))
+         ("M-j"     . join-line))
+  :custom
+  (mark-ring-max 60)
+  (global-mark-ring-max 200))
 
 (use-package page-break-lines
   ;; C-q C-l for page break
@@ -431,6 +469,7 @@ NAME and ARGS are in `use-package'."
   :commands (dired)
   :custom
   (dired-dwim-target t)
+  (dired-auto-revert-buffer t)
   ;; (dired-listing-switches "-alh --group-directories-first" "Human friendly file sizes.")
   ;; (dired-use-ls-dired nil)
   (dired-kill-when-opening-new-dired-buffer t)
@@ -438,7 +477,10 @@ NAME and ARGS are in `use-package'."
   (dired-recursive-deletes 'always)
   (dired-recursive-copies 'always)
   (dired-isearch-filenames 'dwim)
-  :hook (dired-mode-hook . dired-omit-mode))
+  (dired-create-destination-dirs 'ask)
+  :hook (dired-mode-hook . dired-omit-mode)
+  :config
+  (dired-async-mode +1))
 
 (use-feature grep
   :defer 2
@@ -454,6 +496,7 @@ NAME and ARGS are in `use-package'."
   :custom
   (wgrep-auto-save-buffer t)
   (wgrep-change-readonly-file t)
+  (wgrep-enable-key "\C-x\C-q")
   :bind (:map grep-mode-map
               ("w" . wgrep-change-to-wgrep-mode)))
 
@@ -535,8 +578,87 @@ NAME and ARGS are in `use-package'."
          ("C-x C-d" . helm-browse-project)
          :map minibuffer-local-map
          ("C-c C-l" . helm-minibuffer-history))
+  :custom
+  (helm-reuse-last-window-split-state t)
+  (helm-always-two-windows t)
+  (helm-split-window-inside-p nil)
+  (helm-commands-using-frame
+   '(completion-at-point helm-imenu helm-imenu-in-all-buffers))
+  (helm-actions-inherit-frame-settings t)
+  (helm-use-frame-when-more-than-two-windows t)
+  (helm-use-frame-when-no-suitable-window t)
+  (helm-show-action-window-other-window 'left)
+  (helm-allow-mouse t)
+  (helm-move-to-line-cycle-in-source t)
+  (helm-autoresize-max-height 80)
+  (helm-autoresize-min-height 20)
+  (helm-follow-mode-persistent t)
+  (helm-candidate-number-limit 500)
+  (helm-visible-mark-prefix "✓")
+  (helm-adaptive-history-file nil)
   :config
-  (helm-mode +1))
+  (helm-mode +1)
+  (helm-adaptive-mode +1))
+
+(use-feature helm-utils
+  :after (emacs)
+  :hook (find-file . helm-save-current-pos-to-mark-ring)
+  :custom
+  (helm-highlight-matches-around-point-max-lines '(30 . 30))
+  :config
+  (helm-popup-tip-mode +1))
+
+(use-feature helm-sys
+  :after (emacs)
+  :config
+  (helm-top-poll-mode +1))
+
+(use-feature helm-ring
+  :after (emacs)
+  :custom
+  (helm-kill-ring-threshold 1))
+
+(use-feature helm-buffers
+  :after (emacs)
+  :bind (:map helm-buffer-map
+              ("C-d" . helm-buffer-run-kill-persistent))
+  :custom
+  (helm-buffer-skip-remote-checking t)
+  (helm-buffer-max-length 22)
+  (helm-buffers-end-truncated-string "…")
+  (helm-buffers-maybe-switch-to-tab t))
+
+(use-feature helm-files
+  :after (emacs)
+  :custom
+  (helm-ff-auto-update-initial-value t)
+  (helm-ff-allow-non-existing-file-at-point t)
+  (helm-trash-remote-files nil)
+  (helm-dwim-target 'next-window)
+  (helm-file-name-history-hide-deleted t)
+  (helm-ff-ignore-following-on-directory t)
+  (helm-ff-nohighlight-matches nil))
+
+(use-feature helm-occur
+  :after (emacs)
+  :custom
+  (helm-occur-keep-closest-position t)
+  (helm-occur-match-shorthands t))
+
+(use-feature helm-find
+  :after (emacs)
+  :custom
+  (helm-find-noerrors t))
+
+(use-feature helm-epa
+  :after (emacs)
+  :config
+  (helm-epa-mode +1))
+
+(use-package helm-org
+  :after (emacs)
+  :custom
+  (helm-org-heading-fontify t))
 
 (use-package helm-descbinds
   :after (helm))
