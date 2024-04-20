@@ -1,6 +1,26 @@
-;;; init.el --- Emacs Minimal Config ;; -*- lexical-binding: t; -*-
+;;; init.el --- My Emacs configuration               -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2024  Jacopo Costantini
+
+;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
+;; Keywords:
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
+
+;; Simple yet powerful configuration
 
 ;;; Code:
 
@@ -19,7 +39,7 @@
 
 (defmacro use-feature (name &rest args)
   "Like `use-package' but accounting for asynchronous installation.
-  NAME and ARGS are in `use-package'."
+NAME and ARGS are in `use-package'."
   (declare (indent defun))
   `(use-package ,name
      :ensure nil
@@ -33,11 +53,14 @@
   (load custom-file))
 
 (defun font-exists-p (font)
+  "Check if FONT exists."
   (not (null (x-list-fonts font))))
 
 (when (window-system)
-  (cond ((font-exists-p "Iosevka") (set-frame-font "Iosevka:spacing=110:size=13" nil t))
-        ((font-exists-p "Menlo") (set-frame-font "Menlo:spacing=100:size=13" nil t))))
+  (cond ((font-exists-p "Iosevka")
+         (set-frame-font "Iosevka:spacing=110:size=13" nil t))
+        ((font-exists-p "Menlo")
+         (set-frame-font "Menlo:spacing=100:size=13" nil t))))
 
 (when *is-a-mac*
   (setq mac-mouse-wheel-smooth-scroll nil)
@@ -55,13 +78,16 @@
   (let ((gls (executable-find "gls")))
     (when gls (setq insert-directory-program gls))))
 
+
 (use-feature emacs
   :demand t
+  :bind (("C-<return>" . save-buffer)
+         ("M-<left>"   . beginning-of-buffer)
+         ("M-<right>"  . end-of-buffer))
   :custom
   (blink-cursor-interval 0.4)
   (confirm-kill-emacs 'yes-or-no-p)
   (enable-recursive-minibuffers t "Allow minibuffer commands in minibuffer")
-  (frame-title-format '(buffer-file-name "%f" ("%b")) "Make frame title current file's name.")
   (find-library-include-other-files nil)
   (indent-tabs-mode nil "Use spaces, not tabs")
   (history-delete-duplicates t "Don't clutter history")
@@ -83,24 +109,25 @@
   (scroll-preserve-screen-position 'always)
   (completion-cycle-threshold 4)
   (tab-always-indent 'complete)
-  (show-trailing-whitespace t)
   (max-lisp-eval-depth 10000)
+  (frame-title-format
+   '(buffer-file-name "%f" ("%b")) "Make frame title current file's name.")
   :config
   (prefer-coding-system 'utf-8)
   (set-default-coding-systems 'utf-8)
   (set-terminal-coding-system 'utf-8)
-  (set-keyboard-coding-system 'utf-8)
+  (set-keyboard-coding-system 'utf-8))
 
-  (defun crm-indicator (args)
-    (cons (format "[CRM%s] %s"
-                  (replace-regexp-in-string
-                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-                   crm-separator)
-                  (car args))
-          (cdr args)))
-  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
-  (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt)))
+(use-feature whitespace
+  :demand t
+  :diminish (whitespace-mode)
+  :hook (prog-mode)
+  :custom
+  (whitespace-action
+   '(cleanup auto-cleanup))
+  (whitespace-style
+   '(face trailing tabs spaces newline missing-newline-at-eof empty indentation
+          space-after-tab space-before-tab space-mark tab-mark newline-mark)))
 
 (use-package hotfuzz
   :after (emacs))
@@ -167,7 +194,9 @@
 
 (use-package aggressive-indent
   :after (emacs)
-  :hook ((emacs-lisp-mode lisp-mode lisp-interaction-mode) . aggressive-indent-mode))
+  :hook ((emacs-lisp-mode
+          lisp-mode
+          lisp-interaction-mode) . aggressive-indent-mode))
 
 (use-feature savehist
   :after (emacs)
@@ -187,7 +216,7 @@
   :custom
   (global-auto-revert-non-file-buffers t)
   (auto-revert-verbose nil)
-  (auto-revert-interval 0.01 "Instantaneously revert")
+  (auto-revert-interval 1 "One sec revert")
   :config
   (global-auto-revert-mode t))
 
@@ -195,6 +224,10 @@
   :after (emacs)
   :custom
   (help-window-select t "Always select the help window"))
+
+(use-feature copyright
+  :defer t
+  :hook (before-save . copyright-update))
 
 (use-feature files
   :after (emacs)
@@ -206,8 +239,8 @@
   (auto-save-default t)
   (auto-save-timeout 20)
   (auto-save-interval 200)
-  (auto-save-file-name-transforms
-   `((".*" "~/.emacs-saves/" t)))
+  ;; (auto-save-file-name-transforms
+  ;;  `(("." . ,(concat user-emacs-directory "backups"))))
   (make-backup-files t)
   (backup-by-copying t)
   (backup-directory-alist
@@ -221,6 +254,17 @@
   (holiday-hebrew-holidays nil)
   (holiday-islamic-holidays nil)
   (holiday-oriental-holidays nil))
+
+(use-feature timeclock
+  :after (emacs)
+  :custom
+  (timeclock-mode-line-display nil)
+  :bind (("C-c T i" . timeclock-in)
+         ("C-c T o" . timeclock-out)
+         ("C-c T c" . timeclock-change)
+         ("C-c T r" . timeclock-reread-log)
+         ("C-c T u" . timeclock-update-mode-line)
+         ("C-c T w" . timeclock-when-to-leave-string)))
 
 (use-feature compile
   :after (emacs)
@@ -313,7 +357,8 @@
 (use-feature vc-hooks
   :defer 2
   :custom
-  (vc-follow-symlinks t "Visit real file when editing a symlink without prompting."))
+  (vc-follow-symlinks t
+                      "Visit real file when editing a symlink no prompting."))
 
 (use-feature simple
   :after (emacs)
@@ -324,6 +369,7 @@
          ("M-j"     . join-line)))
 
 (use-package page-break-lines
+  ;; C-q C-l for page break
   :after (emacs)
   :diminish (page-break-lines-mode)
   :config
@@ -334,6 +380,19 @@
   :diminish (whole-line-or-region-local-mode)
   :config
   (whole-line-or-region-global-mode +1))
+
+(use-feature autoinsert
+  :after (emacs)
+  :config
+  (auto-insert-mode +1))
+
+(use-feature remember
+  :after (emacs)
+  :bind ("C-x M-r" . remember))
+
+(use-feature hideshow
+  :defer t
+  :hook (prog-mode . hs-minor-mode))
 
 (use-package anzu
   :diminish anzu-mode
@@ -348,12 +407,15 @@
          ("C-c M-%" . anzu-query-replace-at-cursor-thing)))
 
 (use-feature isearch
-  :bind (:map isearch-mode-map
-              ([remap isearch-query-replace] . anzu-isearch-query-replace)
-              ([remap isearch-query-replace-regexp] . anzu-isearch-query-replace-rege))
+  :bind
+  (:map isearch-mode-map
+        ([remap isearch-query-replace] . anzu-isearch-query-replace)
+        ([remap isearch-query-replace-regexp] . anzu-isearch-query-replace-rege))
   :custom
   (search-highlight t)
   (search-whitespace-regexp ".*?")
+  (search-ring-max 26)
+  (regexp-search-ring-max 26)
   (isearch-lax-whitespace t)
   (isearch-repeat-on-direct-change t)
   (isearch-wrap-pause nil)
@@ -450,48 +512,41 @@
   :config
   (global-hl-todo-mode +1))
 
+(use-feature eshell
+  :defer t
+  :config
+  (add-hook 'eshell-mode-hook
+            #'(lambda ()
+                (define-key eshell-hist-mode-map
+                            (kbd "C-c C-l")
+                            'helm-eshell-history))))
+
 ;; Input Completion
-(use-package vertico
-  :after (emacs)
-  :custom
-  (vertico-cycle t)
-  (vertico-count 12)
-  (vertico-resize nil)
-  (vertico-preselect 'directory)
-  (vertico-scroll-margin 0)
+(use-package helm
+  :demand t
+  :diminish (helm-mode)
+  :bind (("M-x"     . helm-M-x)
+         ("C-x r b" . helm-filtered-bookmarks)
+         ("C-x C-f" . helm-find-files)
+         ("C-x b"   . helm-buffers-list)
+         ("C-x C-b" . helm-mini)
+         ("M-y"     . helm-show-kill-ring)
+         ("C-h SPC" . helm-all-mark-rings)
+         ("C-x C-d" . helm-browse-project)
+         :map minibuffer-local-map
+         ("C-c C-l" . helm-minibuffer-history))
   :config
-  (vertico-mode +1))
+  (helm-mode +1))
 
-(use-feature vertico-directory
-  :after (vertico)
-  :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
-         (minibuffer-setup . vertico-repeat-save)
-         (minibuffer-setup . cursor-intangible-mode))
-  :bind (:map vertico-map
-              ("RET"   . vertico-directory-enter)
-              ("DEL"   . vertico-directory-delete-char)
-              ("M-DEL" . vertico-directory-delete-word)))
-
-(use-package marginalia
-  :after (vertico)
-  :custom
-  (marginalia-align 'right)
-  :config
-  (marginalia-mode +1))
-
-(use-package consult
-  :after (vertico)
-  :bind (("C-x b"   . switch-to-buffer)
-         ("C-x C-b" . consult-buffer)
-         ("C-x p"   . consult-project-buffer)
-         ("M-y"     . consult-yank-pop)))
+(use-package helm-descbinds
+  :after (helm))
 
 (use-feature ibuffer
   :after (emacs)
   :bind (("C-x B" . ibuffer)))
 
 (use-package embark
-  :after (consult)
+  :after (helm)
   :bind (("C-," . embark-act)
          ("C-;" . embark-dwim)
          ("C-h B" . embark-bindings)
@@ -499,10 +554,6 @@
          ("C-," . embark-act)
          ("C-c C-," . embark-export)
          ("C-c C-l" . embark-collect)))
-
-(use-package embark-consult
-  :after (consult embark)
-  :hook (embark-collect-mode . consult-preview-at-point-mode))
 
 ;; Buffer Completion
 (use-package company
@@ -570,6 +621,7 @@
 (use-package org-pomodoro
   :defer t)
 
+
 ;;; Programming
 
 ;; Documentation
@@ -597,16 +649,14 @@
     (add-to-list 'eglot-server-programs
                  '(coffee-mode . ("coffeesense-language-server" "--stdio")))))
 
-(use-package consult-eglot
-  :after (eglot))
-
 ;; Tools
 (use-package projectile
   :defer 2
   :bind ("C-c p" . projectile-command-map)
   :custom
   (projectile-per-project-compilation-buffer t)
-  (projectile-mode-line-function '(lambda () (format " P[%s]" (projectile-project-name))))
+  (projectile-mode-line-function '(lambda ()
+                                    (format " P[%s]" (projectile-project-name))))
   :config
   (projectile-mode +1))
 
@@ -635,6 +685,7 @@
 
 (use-package symbol-overlay
   :defer t
+  :diminish (symbol-overlay-mode)
   :bind (:map symbol-overlay-mode-map
               ("M-i" . symbol-overlay-put)
               ("M-I" . symbol-overlay-remove-all)
@@ -673,6 +724,7 @@
 (use-package lorem-ipsum
   :defer t)
 
+
 ;; Languags
 
 ;; YAML
@@ -795,6 +847,7 @@
   ;; Splitting and Joining
   ;; Split an s-expression: M-S (paredit-split-sexp)
   ;; Join two s-expressions: M-J (paredit-join-sexps)
+  :diminish (paredit-mode)
   :hook ((emacs-lisp-mode
           lisp-mode
           lisp-interaction-mode) . enable-paredit-mode))
@@ -858,7 +911,17 @@
   :config
   (setq sqlformat-command 'pgformatter
         sqlformat-args '("-s2" "-g")))
+
+;; JAVA
+(use-feature glasses
+  :defer t
+  :hook (java-mode . glasses-mode))
+
 ;; C/C++
+(use-feature cwarn
+  :defer t
+  :hook ((c-mode c++-mode) . cwarn-mode))
+
 (use-package disaster
   :defer t)
 
@@ -895,13 +958,14 @@
   :defer t
   :mode ("\\.go\\'" . go-mode))
 
+
 ;;; MISC
 ;; FIX ME
 (use-package speed-type
   :defer t)
 
 (use-package eshell-toggle
-  :defer t
+  :after (eshell)
   :custom
   (eshell-toggle-size-fraction 3)
   (eshell-toggle-use-projectile-root t)
@@ -912,4 +976,5 @@
   :defer t
   :bind ([f8] . neotree-toggle))
 
+(provide 'init)
 ;;; init.el ends here
