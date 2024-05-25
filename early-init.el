@@ -1,13 +1,42 @@
-;;; early-init.el --- Emacs Minimal Config ;; -*- lexical-binding: t; -*-
+;;; early-init.el --- My Early Init file             -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2024  Jacopo Costantini
+
+;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
+;; Keywords:
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
+;; My personal Early Init file
+
 ;;; Code:
+
 (defconst *is-a-mac* (eq system-type 'darwin))
 
-(setq package-enable-at-startup nil)
+(setq package-enable-at-startup t)
 (setq inhibit-default-init nil)
-(setq native-comp-async-report-warnings-errors nil)
+
+(setq native-comp-deferred-compilation t
+      native-comp-async-query-on-exit t
+      native-comp-async-jobs-number 4
+      native-comp-async-report-warnings-errors 'silent)
+
+(setq package-archives '(("melpa"  . "https://melpa.org/packages/")
+                         ("gnu"    . "https://elpa.gnu.org/packages/")
+                         ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
 
 ;; PERF: A second, case-insensitive pass over `auto-mode-alist' is time wasted.
 (setq auto-mode-case-fold nil)
@@ -76,16 +105,15 @@
 ;;   GUI frames, but keep it disabled in terminal frames because there it
 ;;   activates an ugly, in-frame menu bar.
 (when *is-a-mac*
-  (add-hook 'window-setup-hook 'doom-restore-menu-bar-in-gui-frames-h)
-  (add-hook 'after-make-frame-functions 'doom-restore-menu-bar-in-gui-frames-h)
-  (defun doom-restore-menu-bar-in-gui-frames-h (&optional frame)
+  (add-hook 'window-setup-hook 'restore-menu-bar-in-gui-frames-h)
+  (add-hook 'after-make-frame-functions 'restore-menu-bar-in-gui-frames-h)
+  (defun restore-menu-bar-in-gui-frames-h (&optional frame)
     (let ((use-frame (or frame (selected-frame))))
       (when (display-graphic-p use-frame)
         (set-frame-parameter use-frame 'menu-bar-lines 1)))))
 
 (setq frame-resize-pixelwise t
       frame-inhibit-implied-resize t
-      frame-title-format '("%b")
       use-dialog-box t ; only for mouse events, which I seldom use
       use-file-dialog nil
       use-short-answers t
@@ -93,6 +121,18 @@
       inhibit-x-resources t
       inhibit-startup-echo-area-message user-login-name ; read the docstring
       inhibit-startup-buffer-menu t)
+
+(setq user-full-name    "Jacopo Costantini"
+      user-mail-address "jacopocostantini32@gmail.com")
+
+;; Don't disable narrowing commands
+(put 'narrow-to-region 'disabled nil)
+(put 'narrow-to-page 'disabled nil)
+(put 'narrow-to-defun 'disabled nil)
+
+;; Don't disable case-change functions
+(put 'upcase-region 'disabled nil)
+(put 'downcase-region 'disabled nil)
 
 (advice-add #'x-apply-session-resources :override #'ignore)
 
@@ -108,7 +148,10 @@
   (load file nil 'nomessage))
 
 (setq window-resize-pixelwise t
+      initial-major-mode 'fundamental-mode
       initial-scratch-message ";; Happy Hacking\n\n")
+
+(setq read-process-output-max (* 3 1024 1024)) ;; 3mb
 
 (defvar default-file-name-handler-alist file-name-handler-alist)
 (setq file-name-handler-alist nil)
@@ -132,7 +175,9 @@
            gc-cons-threshold 8000000)
      (message "gc-cons-threshold & file-name-handler-alist restored")
      (when (boundp 'after-focus-change-function)
-       (add-function :after after-focus-change-function #'+gc-after-focus-change)))))
+       (add-function :after
+                     after-focus-change-function
+                     #'+gc-after-focus-change)))))
 
 (add-hook 'after-init-hook '+reset-init-values)
 
