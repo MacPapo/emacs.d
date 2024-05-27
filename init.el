@@ -694,12 +694,12 @@ NAME and ARGS are in `use-package'."
 
 (use-feature icomplete
   ;; Remember if you want to submit your current prompt hit M-j
-  :defer 2
+  :demand t
   :config
   (fido-vertical-mode +1))
 
 (use-package consult
-  :defer 4
+  :after (icomplete)
   :bind (("C-x C-b" . consult-buffer)
          ("M-y"     . consult-yank-from-kill-ring)))
 
@@ -907,20 +907,6 @@ NAME and ARGS are in `use-package'."
 
 (use-package highlight-escape-sequences
   :hook (prog-mode . hes-mode))
-
-(use-package highlight-indentation
-  :diminish (highlight-indentation-mode)
-  :hook ((ruby-mode
-          ruby-ts-mode
-          python-mode
-          python-ts-mode
-          coffee-mode
-          haml-mode
-          yaml-mode
-          yaml-ts-mode) . highlight-indentation-mode)
-  :custom
-  (set-face-background 'highlight-indentation-face "#e3e3d3")
-  (set-face-background 'highlight-indentation-current-column-face "#c3b3b3"))
 
 (use-feature repeat
   :defer 4
