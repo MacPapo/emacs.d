@@ -559,7 +559,10 @@ NAME and ARGS are in `use-package'."
   (dired-recursive-copies 'always)
   (dired-isearch-filenames 'dwim)
   (dired-create-destination-dirs 'ask)
-  :hook (dired-mode-hook . dired-omit-mode)
+  :hook (dired-mode-hook . dired-omit-mode))
+
+(use-feature dired-async-mode
+  :after (dired)
   :config
   (dired-async-mode +1))
 
