@@ -23,3 +23,7 @@
 *.data
 /devdocs/
 /request/
+/tutorial/
+/org-clock-save.el
+/type-break
+/dape-breakpoints

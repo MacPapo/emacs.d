@@ -43,6 +43,9 @@ NAME and ARGS are in `use-package'."
      :ensure nil
      ,@args))
 
+;; Set font
+(set-frame-font "Iosevka 12" nil t)
+
 (defun +project/root-dir (&optional dir)
   (let ((project (project-current nil dir)))
     (unless project (user-error "Not in a project"))
@@ -61,33 +64,14 @@ NAME and ARGS are in `use-package'."
 
 (setq initial-buffer-choice t) ;;*scratch*
 
-(defun font-exists-p (font)
-  "Check if FONT exists."
-  (not (null (x-list-fonts font))))
-
-(defmacro with-window-system (&rest args)
-  `(when (window-system)
-     ,@args))
-
-(defmacro set-font-if-exists (name spacing size
-                                   &optional keep-size frames inhibit)
-  `(with-window-system
-    (if (font-exists-p ,name)
-        (progn
-          (set-frame-font
-           (format "%s:spacing=%d:size=%d" ,name ,spacing ,size)
-           ,keep-size ,frames ,inhibit))
-      (set-frame-font
-       (format "Menlo:spacing=%d:size=%d" ,spacing ,size)
-       ,keep-size ,frames ,inhibit))))
-
-(set-font-if-exists "Iosevka" 110 13)
+(when (or *is-a-mac*
+          *is-a-linux*)
+  (use-package exec-path-from-shell
+    :demand t
+    :config
+    (exec-path-from-shell-initialize)))
 
 (when *is-a-mac*
-  ;; Enable emoji, and stop the UI from freezing when trying to display them.
-  (when (fboundp 'set-fontset-font)
-    (set-fontset-font t 'unicode "Apple Color Emoji" nil 'prepend))
-
   (setq mac-mouse-wheel-smooth-scroll nil)
   (setq mac-command-modifier 'meta)
   (setq mac-option-modifier 'none)
@@ -99,11 +83,6 @@ NAME and ARGS are in `use-package'."
 
   (setq ns-use-proxy-icon nil)
   (setq frame-title-format nil)
-
-  (use-package exec-path-from-shell
-    :demand t
-    :config
-    (exec-path-from-shell-initialize))
 
   (use-package reveal-in-osx-finder)
 
@@ -156,7 +135,9 @@ NAME and ARGS are in `use-package'."
   :custom
   (acme-theme-black-fg t)
   :config
-  (load-theme 'acme t))
+  (load-theme 'acme t)
+  ;; (load-theme 'modus-vivendi t)
+  )
 
 (use-feature frame
   :defer 3
@@ -202,7 +183,7 @@ NAME and ARGS are in `use-package'."
   :hook (after-save . executable-make-buffer-file-executable-if-script-p))
 
 (use-package hotfuzz
-  :defer 1
+  :demand t
   :custom
   (completion-styles '(hotfuzz basic partial-completion emacs22)))
 
@@ -329,6 +310,11 @@ NAME and ARGS are in `use-package'."
    `((".*" . ,temporary-file-directory)))
   (auto-save-file-name-transforms
    `((".*" ,temporary-file-directory t))))
+
+(use-feature calendar
+  :defer 2
+  :custom
+  (calendar-week-start-day 1))
 
 (use-feature holidays
   :defer 2
@@ -471,7 +457,16 @@ NAME and ARGS are in `use-package'."
      (project-eshell "Eshell")
      (magit-project-status "Git" "g")
      (+project/search "Search project" "s")
-     (+project/search-for-symbol-at-point "Search project with symbol" "S"))))
+     (+project/search-for-symbol-at-point "Search project with symbol" "S")))
+  :config
+  (defun project-find-go-module (dir)
+    (when-let ((root (locate-dominating-file dir "go.mod")))
+      (cons 'go-module root)))
+
+  (cl-defmethod project-root ((project (head go-module)))
+    (cdr project))
+
+  (add-hook 'project-find-functions #'project-find-go-module))
 
 (use-feature vc-hooks
   :defer 1
@@ -817,7 +812,11 @@ NAME and ARGS are in `use-package'."
 
 ;;; Org
 (use-package org
-  :defer 9)
+  :defer 9
+  :custom
+  (org-clock-persist 'history)
+  :config
+  (org-clock-persistence-insinuate))
 
 (use-package org-pomodoro)
 
@@ -851,6 +850,10 @@ NAME and ARGS are in `use-package'."
   :config
   (with-eval-after-load 'eglot
     (advice-add 'jsonrpc--log-event :override #'ignore)
+    (setq-default eglot-workspace-configuration
+                  '((:gopls .
+                            ((staticcheck . t)
+                             (matcher . "CaseSensitive")))))
     (add-to-list 'eglot-server-programs
                  '(coffee-mode . ("coffeesense-language-server" "--stdio")))
     (add-to-list 'eglot-server-programs
@@ -866,6 +869,30 @@ NAME and ARGS are in `use-package'."
   :custom
   (gdb-many-windows t)
   (gdb-show-main t))
+
+;; Command to start RDBG: rdbg command-cwd "/home/macpapo/Code/Ruby/Rails/prova/" -c "bin/rails s --port 3000"
+(use-package dape
+  :defer 8
+  :hook ((kill-emacs . dape-breakpoint-save)  ; Save breakpoint on quit
+         (after-init . dape-breakpoint-load)) ; Load breakpoint on startup
+  :init
+  (setq dape-buffer-window-arrangement 'gud)
+  :config
+  (dape-breakpoint-global-mode)         ; Global bindings for setting breakpoints with mouse
+
+  ;; To not display info and/or buffers on startup
+  (remove-hook 'dape-on-start-hooks 'dape-info)
+  (remove-hook 'dape-on-start-hooks 'dape-repl)
+
+  ;; To display info and/or repl buffers on stopped
+  (add-hook 'dape-on-stopped-hooks 'dape-info)
+  (add-hook 'dape-on-stopped-hooks 'dape-repl)
+
+  ;; Kill compile buffer on build success
+  (add-hook 'dape-compile-compile-hooks 'kill-buffer)
+
+  ;; Save buffers on startup, useful for interpreted languages
+  (add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t))))
 
 ;; Tools
 (use-package dotenv-mode
@@ -974,7 +1001,8 @@ NAME and ARGS are in `use-package'."
 (use-package rvm
   :defer 20
   :config
-  (rvm-use-default))
+  (rvm-use-default)
+  (push 'company-robe company-backends))
 
 (use-package inf-ruby
   :hook ((ruby-mode ruby-ts-mode) . inf-ruby-minor-mode))

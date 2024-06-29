@@ -25,6 +25,8 @@
 ;;; Code:
 
 (defconst *is-a-mac* (eq system-type 'darwin))
+(defconst *is-a-linux* (or (eq system-type 'gnu)
+                           (eq system-type 'gnu/linux)))
 
 (setq package-enable-at-startup t)
 (setq inhibit-default-init nil)
