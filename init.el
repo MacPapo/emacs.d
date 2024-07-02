@@ -43,9 +43,6 @@ NAME and ARGS are in `use-package'."
      :ensure nil
      ,@args))
 
-;; Set font
-(set-frame-font "Iosevka 12" nil t)
-
 (defun +project/root-dir (&optional dir)
   (let ((project (project-current nil dir)))
     (unless project (user-error "Not in a project"))
@@ -128,7 +125,8 @@ NAME and ARGS are in `use-package'."
   (set-terminal-coding-system 'utf-8)
   (set-keyboard-coding-system 'utf-8)
   (set-selection-coding-system 'utf-8)
-  (prefer-coding-system 'utf-8))
+  (prefer-coding-system 'utf-8)
+  (set-frame-font "Iosevka 12" nil t))
 
 (use-package acme-theme
   :demand t
@@ -557,12 +555,12 @@ NAME and ARGS are in `use-package'."
   :hook (dired-mode-hook . dired-omit-mode))
 
 (use-feature dired-async-mode
-  :after (dired)
+  :defer 2
   :config
   (dired-async-mode +1))
 
 (use-feature dired-x
-  :after (dired))
+  :defer 2)
 
 (use-feature grep
   :defer 5
@@ -578,8 +576,6 @@ NAME and ARGS are in `use-package'."
   (wgrep-enable-key "\C-x\C-q")
   :bind (:map grep-mode-map
               ("w" . wgrep-change-to-wgrep-mode)))
-
-(use-package deadgrep)
 
 (use-package which-key
   :defer 5
@@ -690,14 +686,14 @@ NAME and ARGS are in `use-package'."
   (add-to-list 'ido-ignore-directories "target")
   (add-to-list 'ido-ignore-directories "node_modules"))
 
-(use-feature icomplete
+(use-feature vertico
   ;; Remember if you want to submit your current prompt hit M-j
   :demand t
   :config
-  (fido-vertical-mode +1))
+  (vertico-mode +1))
 
 (use-package consult
-  :after (icomplete)
+  :after (vertico)
   :bind (("C-x C-b" . consult-buffer)
          ("M-y"     . consult-yank-from-kill-ring)))
 
