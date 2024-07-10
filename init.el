@@ -125,8 +125,7 @@ NAME and ARGS are in `use-package'."
   (set-terminal-coding-system 'utf-8)
   (set-keyboard-coding-system 'utf-8)
   (set-selection-coding-system 'utf-8)
-  (prefer-coding-system 'utf-8)
-  (set-frame-font "Iosevka 12" nil t))
+  (prefer-coding-system 'utf-8))
 
 (use-package acme-theme
   :demand t
@@ -138,9 +137,11 @@ NAME and ARGS are in `use-package'."
   )
 
 (use-feature frame
-  :defer 3
+  :demand t
   :custom
-  (blink-cursor-interval 0.4))
+  (blink-cursor-interval 0.4)
+  :config
+  (set-frame-font "Iosevka 12" nil t))
 
 (use-feature mb-depth
   :defer 3
@@ -657,6 +658,73 @@ NAME and ARGS are in `use-package'."
 
 ;; Input Completion
 (use-feature ido
+  ;;   :doc "Keymap for all Ido commands."
+  ;;   :parent minibuffer-local-map
+  ;;   "C-a"     #'ido-toggle-ignore
+  ;;   "C-c"     #'ido-toggle-case
+  ;;   "C-e"     #'ido-edit-input
+  ;;   "TAB"     #'ido-complete
+  ;;   "SPC"     #'ido-complete-space
+  ;;   "C-j"     #'ido-select-text
+  ;;   "C-m"     #'ido-exit-minibuffer
+  ;;   "C-p"     #'ido-toggle-prefix
+  ;;   "C-r"     #'ido-prev-match
+  ;;   "C-s"     #'ido-next-match
+  ;;   "C-."     #'ido-next-match
+  ;;   "C-,"     #'ido-prev-match
+  ;;   "C-t"     #'ido-toggle-regexp
+  ;;   "C-z"     #'ido-undo-merge-work-directory
+  ;;   "C-SPC"   #'ido-restrict-to-matches
+  ;;   "M-SPC"   #'ido-take-first-match
+  ;;   "C-@"     #'ido-restrict-to-matches
+  ;;   "<right>" #'ido-next-match
+  ;;   "<left>"  #'ido-prev-match
+  ;;   "?"       #'ido-completion-help
+  ;;   "C-b"     #'ido-magic-backward-char
+  ;;   "C-f"     #'ido-magic-forward-char
+  ;;   "C-d"     #'ido-magic-delete-char
+
+  ;;   :doc "Keymap for Ido file and directory commands."
+  ;;   :parent ido-common-completion-map
+  ;;   "C-x C-b"     #'ido-enter-switch-buffer
+  ;;   "C-x C-f"     #'ido-fallback-command
+  ;;   "C-x C-d"     #'ido-enter-dired
+  ;;   "<down>"      #'ido-next-match-dir
+  ;;   "<up>"        #'ido-prev-match-dir
+  ;;   "M-<up>"      #'ido-prev-work-directory
+  ;;   "M-<down>"    #'ido-next-work-directory
+  ;;   "<backspace>" #'ido-delete-backward-updir
+  ;;   "DEL"         #'ido-delete-backward-updir
+  ;;   "<remap> <delete-backward-char>" #'ido-delete-backward-updir
+  ;;   "<remap> <backward-kill-word>"   #'ido-delete-backward-word-updir
+  ;;   "C-<backspace>" #'ido-up-directory
+  ;;   "C-l"   #'ido-reread-directory
+  ;;   "M-d"   #'ido-wide-find-dir-or-delete-dir
+  ;;   "M-b"   #'ido-push-dir
+  ;;   "M-v"   #'ido-push-dir-first
+  ;;   "M-f"   #'ido-wide-find-file-or-pop-dir
+  ;;   "M-k"   #'ido-forget-work-directory
+  ;;   "M-m"   #'ido-make-directory
+  ;;   "M-n"   #'ido-next-work-directory
+  ;;   "M-o"   #'ido-prev-work-file
+  ;;   "C-M-o" #'ido-next-work-file
+  ;;   "M-p"   #'ido-prev-work-directory
+  ;;   "M-s"   #'ido-merge-work-directories
+
+  ;;   :doc "Keymap for Ido file commands."
+  ;;   :parent ido-file-dir-completion-map
+  ;;   "C-o" #'ido-copy-current-word
+  ;;   "C-w" #'ido-copy-current-file-name
+  ;;   "M-l" #'ido-toggle-literal
+
+  ;;   :doc "Keymap for Ido buffer commands."
+  ;;   :parent ido-common-completion-map
+  ;;   "C-x C-f" #'ido-enter-find-file
+  ;;   "C-x C-b" #'ido-fallback-command
+  ;;   "C-k"     #'ido-kill-buffer-at-head
+  ;;   "C-S-b"   #'ido-bury-buffer-at-head
+  ;;   "C-o"     #'ido-toggle-virtual-buffers
+
   :demand t
   :bind (
          ;; Find Files
@@ -673,44 +741,46 @@ NAME and ARGS are in `use-package'."
          ;; Display Buffer (No selection)
          ("C-x 4 C-o" . ido-display-buffer))
   :custom
-  (ido-create-new-buffer 'always)
+  (ido-enable-flex-matching t)
+  (ido-all-frames nil)
+  (ido-buffer-disable-smart-matches nil)
   (ido-use-filename-at-point 'guess)
-  (ido-max-prospects 10)
+  (ido-use-url-at-point 'guess)
+  (ido-use-virtual-buffers 'auto)
+  (ido-max-window-height 1)
   (ido-use-faces t)
-  (ido-default-file-method 'selected-window)
-  (ido-auto-merge-work-directories-length -1)
-  (ido-file-extensions-order
-   '(".org" ".el" ".c" ".cpp" ".rb" ".java" ".lisp" ".md" ".dart"))
   :config
   (ido-mode +1)
-  (add-to-list 'ido-ignore-directories "target")
-  (add-to-list 'ido-ignore-directories "node_modules"))
+  (ido-everywhere +1))
 
-(use-feature vertico
-  ;; Remember if you want to submit your current prompt hit M-j
+(use-package ido-completing-read+
   :demand t
   :config
-  (vertico-mode +1))
+  (ido-ubiquitous-mode +1))
 
-(use-package consult
-  :after (vertico)
-  :bind (("C-x C-b" . consult-buffer)
-         ("M-y"     . consult-yank-from-kill-ring)))
+(use-package ido-at-point
+  ;; Use C-M-i
+  :demand t
+  :config
+  (ido-at-point-mode +1))
 
-(use-package embark
-  :after (consult)
-  :bind (("C-," . embark-act)
-         ("C-;" . embark-dwim)
-         ("C-h B" . embark-bindings)
-         :map minibuffer-local-map
-         ("C-," . embark-act)
-         ("C-c C-," . embark-export)
-         ("C-c C-l" . embark-collect)))
+(use-package crm-custom
+  :demand t
+  :config
+  (crm-custom-mode +1))
 
-(use-package embark-consult)
+(use-feature icomplete
+  :after (ido)
+  :config
+  (icomplete-mode +1))
+
+(use-package amx
+  :demand t
+  :config
+  (amx-mode +1))
 
 (use-feature ibuffer
-  :bind (("C-x B" . ibuffer))
+  :bind (("C-x C-b" . ibuffer))
   :hook (ibuffer-mode . ibuffer-auto-mode)
   :custom
   (ibuffer-expert t))
@@ -734,47 +804,12 @@ NAME and ARGS are in `use-package'."
           python-ts-mode) . subword-mode))
 
 ;; Buffer Completion
-(use-package company
-  :defer 2
-  :diminish (company-mode)
-  :preface
-  (setq tab-always-indent 'complete
-        completion-cycle-threshold 3)
-  :custom
-  (company-idle-delay 0.2)
-  (company-minimum-prefix-length 2)
-  (company-tooltip-limit 7)
-  (company-tooltip-minimum-width 60)
-  (company-tooltip-maximum-width 60)
-  (company-global-modes '(not erc-mode message-mode eshell-mode))
-  (company-format-margin-function 'company-text-icons-margin)
-  (company-text-icons-add-background t)
-  (company-files-exclusions '(".git/" ".DS_Store" "node_modules/"))
-  (company-transformers '(delete-consecutive-dups
-                          company-sort-by-occurrence))
-  :config
-  (global-company-mode +1))
-
-(use-package company-posframe
-  :defer 1
-  :diminish (company-posframe-mode)
-  :config
-  (company-posframe-mode +1))
-
 (use-package yasnippet
   :defer 5
   :config
   (yas-global-mode +1))
 
 (use-package yasnippet-snippets)
-
-(use-package slime-company
-  :after (slime)
-  :custom
-  (slime-company-after-completion 'slime-company-just-one-space)
-  :config
-  ;; (slime-company-maybe-enable)
-  )
 
 ;;; Git
 (use-package magit
@@ -816,7 +851,7 @@ NAME and ARGS are in `use-package'."
 
 (use-package org-pomodoro)
 
-;;; Programming
+;;; Programming Tools
 
 ;; Documentation
 (use-feature eldoc
@@ -997,8 +1032,7 @@ NAME and ARGS are in `use-package'."
 (use-package rvm
   :defer 20
   :config
-  (rvm-use-default)
-  (push 'company-robe company-backends))
+  (rvm-use-default))
 
 (use-package inf-ruby
   :hook ((ruby-mode ruby-ts-mode) . inf-ruby-minor-mode))
@@ -1042,7 +1076,6 @@ NAME and ARGS are in `use-package'."
   (add-to-list 'auto-mode-alist '("\\.cl\\'" . lisp-mode))
   (slime-setup '(slime-fancy
                  slime-cl-indent
-                 slime-company
                  slime-repl-ansi-color)))
 
 (use-package slime-repl-ansi-color
@@ -1158,6 +1191,8 @@ NAME and ARGS are in `use-package'."
 
 (use-package neotree
   :bind ([f8] . neotree-toggle))
+
+(use-package mermaid-mode)
 
 (use-feature gnus
   :defer 20
