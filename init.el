@@ -228,7 +228,7 @@ NAME and ARGS are in `use-package'."
   :custom
   (history-length 100)
   (history-delete-duplicates t)
-  (savehist-autosave-interval 120)
+  (savehist-autosave-interval 220)
   (savehist-additional-variables '(kill-ring search-ring regexp-search-ring))
   :config
   (savehist-mode +1))
@@ -807,6 +807,7 @@ NAME and ARGS are in `use-package'."
   (which-function-mode +1))
 
 (use-feature subword
+  :diminish (subword-mode)
   :hook ((ruby-mode
           ruby-ts-mode
           python-mode
@@ -1044,12 +1045,14 @@ NAME and ARGS are in `use-package'."
   :hook ((ruby-mode ruby-ts-mode) . inf-ruby-minor-mode))
 
 (use-package robe
+  :diminish (robe-mode)
   :hook ((ruby-mode ruby-ts-mode) . robe-mode))
 
 (use-package ruby-end
   :diminish (ruby-end-mode))
 
 (use-package rspec-mode
+  :diminish (rspec-mode)
   :hook ((ruby-mode ruby-ts-mode) . rspec-mode))
 
 (use-package rake)
@@ -1059,6 +1062,7 @@ NAME and ARGS are in `use-package'."
 (use-package bundler)
 
 (use-package rubocop
+  :diminish (rubocop-mode)
   :hook ((ruby-mode ruby-ts-mode) . rubocop-mode))
 
 ;; LISP
