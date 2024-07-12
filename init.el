@@ -43,22 +43,6 @@ NAME and ARGS are in `use-package'."
      :ensure nil
      ,@args))
 
-(defun +project/root-dir (&optional dir)
-  (let ((project (project-current nil dir)))
-    (unless project (user-error "Not in a project"))
-    (project-root project)))
-
-(defun +project/search ()
-  (interactive)
-  (let ((dir (+project/root-dir)))
-    (funcall-interactively #'consult-ripgrep dir)))
-
-(defun +project/search-for-symbol-at-point ()
-  (interactive)
-  (let ((dir (+project/root-dir))
-        (initial (thing-at-point 'symbol t)))
-    (funcall-interactively #'consult-ripgrep dir initial)))
-
 (setq initial-buffer-choice t) ;;*scratch*
 
 (when (or *is-a-mac*
@@ -181,15 +165,8 @@ NAME and ARGS are in `use-package'."
   :defer 5
   :hook (after-save . executable-make-buffer-file-executable-if-script-p))
 
-(use-package hotfuzz
-  :demand t
-  :custom
-  (completion-styles '(hotfuzz basic partial-completion emacs22)))
-
 ;; MISC
 (use-package diminish)
-
-(use-package sudo-edit)
 
 (use-package mode-line-bell
   :defer 3
@@ -217,7 +194,7 @@ NAME and ARGS are in `use-package'."
                  double-bar   ?║
                  solid-block  ?█
                  empty-bullet ?◦)
-              'triple-pipe))
+              'double-bar))
   :config
   (set-face-attribute 'fill-column-indicator nil
                       :foreground "#717C7C" ; katana-gray
@@ -304,7 +281,7 @@ NAME and ARGS are in `use-package'."
   (auto-save-interval 200)
   (make-backup-files t)
   (backup-by-copying t)
-  ;; Replace default directories
+  ;; Replace default directories TODO
   (backup-directory-alist
    `((".*" . ,temporary-file-directory)))
   (auto-save-file-name-transforms
@@ -325,6 +302,7 @@ NAME and ARGS are in `use-package'."
   (holiday-oriental-holidays nil))
 
 (use-feature timeclock
+  ;; TODO
   :custom
   (timeclock-mode-line-display nil)
   :bind (("C-c T i" . timeclock-in)
@@ -445,18 +423,14 @@ NAME and ARGS are in `use-package'."
 
 (use-feature project
   :defer 3
-  :bind (:map project-prefix-map
-              ("C-s" . +project/search))
   :custom
   (project-switch-commands
-   '((project-find-file "Find file")
-     (deadgrep "Find regexp" "r")
-     (project-find-dir "Find directory")
-     (project-dired "Root dired")
-     (project-eshell "Eshell")
-     (magit-project-status "Git" "g")
-     (+project/search "Search project" "s")
-     (+project/search-for-symbol-at-point "Search project with symbol" "S")))
+   '((project-find-file "Find file" "f")
+     (project-find-regexp "Find regexp" "r")
+     (project-find-dir "Find directory" "d")
+     (project-dired "Root dired" "D")
+     (project-eshell "Eshell" "e")
+     (magit-project-status "Git" "g")))
   :config
   (defun project-find-go-module (dir)
     (when-let ((root (locate-dominating-file dir "go.mod")))
@@ -513,6 +487,7 @@ NAME and ARGS are in `use-package'."
   (auto-insert-mode +1))
 
 (use-feature remember
+  :defer 2
   :bind ("C-x M-r" . remember))
 
 (use-feature hideshow
@@ -521,10 +496,6 @@ NAME and ARGS are in `use-package'."
 
 (use-feature isearch
   :defer 3
-  :bind
-  (:map isearch-mode-map
-        ([remap isearch-query-replace] . anzu-isearch-query-replace)
-        ([remap isearch-query-replace-regexp] . anzu-isearch-query-replace-rege))
   :custom
   (search-highlight t)
   (search-whitespace-regexp ".*?")
@@ -574,7 +545,6 @@ NAME and ARGS are in `use-package'."
   :custom
   (wgrep-auto-save-buffer t)
   (wgrep-change-readonly-file t)
-  (wgrep-enable-key "\C-x\C-q")
   :bind (:map grep-mode-map
               ("w" . wgrep-change-to-wgrep-mode)))
 
@@ -591,6 +561,7 @@ NAME and ARGS are in `use-package'."
   (which-key-mode +1))
 
 (use-package avy
+  ;; TODO
   :custom
   (avy-background t)
   (avy-style 'at-full)
@@ -644,9 +615,11 @@ NAME and ARGS are in `use-package'."
          ("C-c e"   . crux-visit-shell-buffer)))
 
 (use-package goto-chg
+  :defer 3
   :bind (("C-M-'" . goto-last-change)))
 
 (use-package expand-region
+  :defer 3
   :bind ("C-=" . er/expand-region))
 
 (use-package hl-todo
@@ -804,12 +777,13 @@ NAME and ARGS are in `use-package'."
           python-ts-mode) . subword-mode))
 
 ;; Buffer Completion
-(use-package yasnippet
-  :defer 5
-  :config
-  (yas-global-mode +1))
+;; TODO
+;; (use-package yasnippet
+;;   :defer 5
+;;   :config
+;;   (yas-global-mode +1))
 
-(use-package yasnippet-snippets)
+;; (use-package yasnippet-snippets)
 
 ;;; Git
 (use-package magit
@@ -825,8 +799,6 @@ NAME and ARGS are in `use-package'."
   :config
   (transient-bind-q-to-quit))
 
-(use-package transient)
-
 (use-package magit-todos)
 
 (use-package git-modes
@@ -841,6 +813,7 @@ NAME and ARGS are in `use-package'."
   :custom
   (gitignore-templates-api 'github))
 
+
 ;;; Org
 (use-package org
   :defer 9
@@ -850,7 +823,9 @@ NAME and ARGS are in `use-package'."
   (org-clock-persistence-insinuate))
 
 (use-package org-pomodoro)
+
 
+
 ;;; Programming Tools
 
 ;; Documentation
@@ -1052,7 +1027,8 @@ NAME and ARGS are in `use-package'."
 
 (use-package bundler)
 
-(use-package rubocop)
+(use-package rubocop
+  :hook ((ruby-mode ruby-ts-mode) . rubocop-mode))
 
 ;; LISP
 (use-package slime
