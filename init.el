@@ -396,6 +396,37 @@ NAME and ARGS are in `use-package'."
   (uniquify-after-kill-buffer-p t)
   (uniquify-ignore-buffers-re "^\\*"))
 
+(use-package browse-kill-ring
+  ;; C-g	browse-kill-ring-quit
+  ;; RET	browse-kill-ring-insert-and-quit
+  ;; ?		describe-mode
+  ;; U		browse-kill-ring-undo-other-window
+  ;; a		browse-kill-ring-append-insert
+  ;; b		browse-kill-ring-prepend-insert
+  ;; d		browse-kill-ring-delete
+  ;; e		browse-kill-ring-edit
+  ;; g		browse-kill-ring-update
+  ;; h		describe-mode
+  ;; i		browse-kill-ring-insert
+  ;; l		browse-kill-ring-occur
+  ;; n		browse-kill-ring-forward
+  ;; o		browse-kill-ring-insert-and-move
+  ;; p		browse-kill-ring-previous
+  ;; q		browse-kill-ring-quit
+  ;; r		browse-kill-ring-search-backward
+  ;; s		browse-kill-ring-search-forward
+  ;; u		browse-kill-ring-insert-move-and-quit
+  ;; x		browse-kill-ring-insert-and-delete
+  ;; y		browse-kill-ring-insert
+  ;; M-<return> browse-kill-ring-insert-move-and-quit
+  ;; <mouse-2>	browse-kill-ring-mouse-insert
+  :demand t
+  :custom
+  (browse-kill-ring-highlight-current-entry t)
+  (browse-kill-ring-highlight-inserted-item 'pulse)
+  :config
+  (browse-kill-ring-default-keybindings))
+
 (use-feature tab-bar
   ;; TAB NEXT -> C-TAB
   ;; TAB PREV -> C-S-TAB
@@ -489,6 +520,11 @@ NAME and ARGS are in `use-package'."
 (use-feature remember
   :defer 2
   :bind ("C-x M-r" . remember))
+
+(use-feature repeat
+  :defer 4
+  :config
+  (repeat-mode +1))
 
 (use-feature hideshow
   :diminish (hs-minor-mode)
@@ -943,11 +979,6 @@ NAME and ARGS are in `use-package'."
 
 (use-package highlight-escape-sequences
   :hook (prog-mode . hes-mode))
-
-(use-feature repeat
-  :defer 4
-  :config
-  (repeat-mode +1))
 
 (use-package lorem-ipsum)
 
