@@ -24,16 +24,17 @@
 
 ;;; Code:
 
-;; Bootstrap `use-package`
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
+;;; Guardrail
 
-(eval-when-compile
-  (require 'use-package)
-  (setq use-package-always-ensure t
-        use-package-expand-minimally t
-        use-package-always-defer t))
+(when (< emacs-major-version 29)
+  (error "This Emacs Config only works with Emacs 29 and newer; you have version %s" emacs-major-version))
+
+(with-eval-after-load 'package
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
+
+(require 'use-package)
+(with-eval-after-load 'use-package
+  (setq use-package-always-ensure t))
 
 (defmacro use-feature (name &rest args)
   "Like `use-package' but accounting for asynchronous installation.
@@ -45,48 +46,61 @@ NAME and ARGS are in `use-package'."
 
 (setq initial-buffer-choice t) ;;*scratch*
 
+;; Make right-click do something sensible
+(when (display-graphic-p)
+  (context-menu-mode))
+
 (when (or *is-a-mac*
           *is-a-linux*)
+
+  ;; Enable horizontal scrolling
+  (setopt mouse-wheel-tilt-scroll t)
+  (setopt mouse-wheel-flip-direction t)
+
+  ;; Misc. UI tweaks
+  (blink-cursor-mode)                   ; Steady cursor
+  (pixel-scroll-precision-mode)         ; Smooth scrolling
+
   (use-package exec-path-from-shell
-    :demand t
     :config
-    (exec-path-from-shell-initialize)))
+    (exec-path-from-shell-initialize))
 
-(when *is-a-mac*
-  (setq mac-mouse-wheel-smooth-scroll nil)
-  (setq mac-command-modifier 'meta)
-  (setq mac-option-modifier 'none)
-  (setq ns-function-modifier 'hyper)
-  (setq-default locate-command "mdfind")
+  (if *is-a-mac*
+      (progn
+        (setq mac-mouse-wheel-smooth-scroll nil)
+        (setq mac-command-modifier 'meta)
+        (setq mac-option-modifier 'none)
+        (setq ns-function-modifier 'hyper)
+        (setq-default locate-command "mdfind")
 
-  (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-  (add-to-list 'default-frame-alist '(ns-appearance . light))
+        (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+        (add-to-list 'default-frame-alist '(ns-appearance . light))
 
-  (setq ns-use-proxy-icon nil)
-  (setq frame-title-format nil)
+        (setq ns-use-proxy-icon nil)
+        (setq frame-title-format nil)
 
-  (use-package reveal-in-osx-finder)
+        (use-package reveal-in-osx-finder)
 
-  (use-package osx-trash
-    :config
-    (osx-trash-setup))
+        (use-package osx-trash
+          :config
+          (osx-trash-setup))
 
-  ;; GNU utils
-  (let ((gls (executable-find "gls")))
-    (when gls (setq insert-directory-program gls))))
+        ;; GNU utils
+        (let ((gls (executable-find "gls")))
+          (when gls (setq insert-directory-program gls))))
+    ;; TODO write linux only prefs
+    ))
 
 
 (use-feature cus-edit
-  :demand t
   :custom
   (custom-file null-device "Don't store customizations"))
 
 (use-feature emacs
-  :demand t
-  :bind (("C-<return>" . save-buffer)
-         ("M-<left>"   . beginning-of-buffer)
-         ("M-<right>"  . end-of-buffer))
   :custom
+  (indicate-buffer-boundaries 'left)
+  (x-underline-at-descent-line nil)
+  (tab-always-indent 'complete)
   (auto-save-list-file-prefix nil)
   (tags-revert-without-query t)
   (font-lock-maximum-decoration t)
@@ -96,13 +110,10 @@ NAME and ARGS are in `use-package'."
   (truncate-lines nil)
   (truncate-partial-width-windows nil)
   (max-lisp-eval-depth 10000)
-  (scroll-margin 0)
-  (scroll-conservatively 101)
-  (scroll-preserve-screen-position t)
   (locale-coding-system 'utf-8)
   (coding-system-for-read 'utf-8)
   (coding-system-for-write 'utf-8)
-  (default-process-coding-system '(utf-8-unix . utf-8-unix))
+  (sentence-end-double-space nil)
   :init
   (set-charset-priority 'unicode)
   (set-default-coding-systems 'utf-8)
@@ -112,7 +123,6 @@ NAME and ARGS are in `use-package'."
   (prefer-coding-system 'utf-8))
 
 (use-package acme-theme
-  :demand t
   :custom
   (acme-theme-black-fg t)
   :config
@@ -121,26 +131,27 @@ NAME and ARGS are in `use-package'."
   )
 
 (use-feature frame
-  :demand t
   :custom
   (blink-cursor-interval 0.4)
   :config
   (set-frame-font "Iosevka 12" nil t))
 
 (use-feature mb-depth
-  :defer 3
   :custom
   (enable-recursive-minibuffers t)
   :config
   (minibuffer-depth-indicate-mode +1))
 
 (use-feature minibuffer
-  :defer 3
   :custom
-  (completion-cycle-threshold 4))
+  (completion-cycle-threshold 1)
+  (completion-auto-help 'lazy)
+  (completions-format 'one-column)
+  (completions-group t)
+  (completion-auto-select 'second-tab)
+  (completion-styles '(basic initials partial-completion substring emacs22)))
 
 (use-feature whitespace
-  :defer 2
   :diminish (global-whitespace-mode)
   :custom
   (whitespace-line-column 80)
@@ -162,19 +173,16 @@ NAME and ARGS are in `use-package'."
   (global-whitespace-mode +1))
 
 (use-feature executable
-  :defer 5
   :hook (after-save . executable-make-buffer-file-executable-if-script-p))
 
 ;; MISC
 (use-package diminish)
 
 (use-package mode-line-bell
-  :defer 3
   :config
   (mode-line-bell-mode +1))
 
 (use-feature delsel
-  :defer 2
   :config
   (delete-selection-mode +1))
 
@@ -197,23 +205,19 @@ NAME and ARGS are in `use-package'."
               'double-bar))
   :config
   (set-face-attribute 'fill-column-indicator nil
-                      :foreground "#717C7C" ; katana-gray
-                      :background "transparent"))
+                      :foreground "#717C7C"))
 
 (use-feature paren
-  :defer 2
   :custom
   (show-paren-ring-bell-on-mismatch t)
   :config
   (show-paren-mode +1))
 
 (use-feature elec-pair
-  :defer 2
   :config
   (electric-pair-mode +1))
 
 (use-feature electric
-  :defer 2
   :config
   (electric-indent-mode +1))
 
@@ -224,50 +228,40 @@ NAME and ARGS are in `use-package'."
           lisp-interaction-mode) . aggressive-indent-mode))
 
 (use-feature savehist
-  :defer 2
   :custom
   (history-length 100)
   (history-delete-duplicates t)
-  (savehist-autosave-interval 220)
+  (savehist-autosave-interval 300)
   (savehist-additional-variables '(kill-ring search-ring regexp-search-ring))
   :config
   (savehist-mode +1))
 
 (use-feature saveplace
-  :defer 2
   :config
   (save-place-mode +1))
 
 (use-feature autorevert
-  :defer 2
   :custom
+  (auto-revert-avoid-polling t)
   (global-auto-revert-non-file-buffers t)
   (auto-revert-verbose nil)
-  (auto-revert-interval 1 "One sec revert")
+  (auto-revert-check-vc-info t)
+  (auto-revert-interval 5 "5 sec revert")
   :config
   (global-auto-revert-mode +1))
 
 (use-feature help
-  :defer 2
   :custom
   (help-window-select t "Always select the help window"))
 
 (use-feature copyright
-  :defer 5
   :hook (before-save . copyright-update))
 
-(use-feature menu-bar
-  :defer 3
-  :custom
-  (buffers-menu-max-size 30))
-
 (use-feature bookmark
-  :defer 2
   :custom
   (bookmark-default-file (locate-user-emacs-file ".bookmarks.el")))
 
 (use-feature files
-  :demand t
   :custom
   (require-final-newline t)
   (confirm-kill-emacs 'yes-or-no-p)
@@ -281,19 +275,24 @@ NAME and ARGS are in `use-package'."
   (auto-save-interval 200)
   (make-backup-files t)
   (backup-by-copying t)
-  ;; Replace default directories TODO
-  (backup-directory-alist
-   `((".*" . ,temporary-file-directory)))
-  (auto-save-file-name-transforms
-   `((".*" ,temporary-file-directory t))))
+  :config
+  ;; Don't litter file system with *~ backup files; put them all inside
+  ;; ~/.emacs.d/backup or wherever
+  (defun bedrock--backup-file-name (fpath)
+    "Return a new file path of a given file path.
+If the new path's directories does not exist, create them."
+    (let* ((backupRootDir (concat user-emacs-directory "emacs-backup/"))
+           (filePath (replace-regexp-in-string "[A-Za-z]:" "" fpath )) ; remove Windows driver letter in path
+           (backupFilePath (replace-regexp-in-string "//" "/" (concat backupRootDir filePath "~") )))
+      (make-directory (file-name-directory backupFilePath) (file-name-directory backupFilePath))
+      backupFilePath))
+  (setopt make-backup-file-name-function 'bedrock--backup-file-name))
 
 (use-feature calendar
-  :defer 2
   :custom
   (calendar-week-start-day 1))
 
 (use-feature holidays
-  :defer 2
   :commands (org-agenda)
   :custom
   (holiday-bahai-holidays nil)
@@ -326,18 +325,11 @@ NAME and ARGS are in `use-package'."
       (ansi-color-apply-on-region (point-min) (point-max))))
   (add-hook 'compilation-filter-hook #'+compilation-colorize))
 
-(use-feature windmove
-  :defer 2
-  :config
-  (windmove-default-keybindings))
-
 (use-feature hl-line
-  :defer 3
   :config
   (global-hl-line-mode +1))
 
 (use-feature recentf
-  :defer 1
   :custom
   (recentf-max-menu-items 15)
   (recentf-max-saved-items 500)
@@ -346,23 +338,23 @@ NAME and ARGS are in `use-package'."
   (recentf-mode +1))
 
 (use-feature time
-  :defer 2
   :custom
-  (display-time-day-and-date t "Show date, day, and time")
-  (display-time-24hr-format t "Show time as 24H format")
   (display-time-default-load-average nil "Dont show load avg")
+  (display-time-format "%a %F %T")
+  (display-time-interval 1)
   :config
-  (display-time))
+  ;; Add the time to the tab-bar, if visible
+  (add-to-list 'tab-bar-format 'tab-bar-format-align-right 'append)
+  (add-to-list 'tab-bar-format 'tab-bar-format-global 'append)
+  (display-time-mode +1))
 
 (use-feature tramp
-  :defer 10
   :custom
   (tramp-inline-compress-start-size 1000000)
   (tramp-default-method "ssh")
   (tramp-backup-directory-alist backup-directory-alist))
 
 (use-feature winner
-  :defer 4
   :bind (("M-N" . winner-undo)
          ("M-P" . winner-redo))
   :custom
@@ -381,7 +373,6 @@ NAME and ARGS are in `use-package'."
   (winner-mode +1))
 
 (use-feature window
-  :defer 2
   :custom
   (switch-to-buffer-obey-display-actions t)
   (switch-to-prev-buffer-skip-regexp
@@ -389,7 +380,6 @@ NAME and ARGS are in `use-package'."
      "\\*Messages\\*" "\\*scratch\\*" "\\magit-.*")))
 
 (use-feature uniquify
-  :defer 2
   :custom
   (uniquify-buffer-name-style 'reverse)
   (uniquify-separator " • ")
@@ -420,7 +410,6 @@ NAME and ARGS are in `use-package'."
   ;; y		browse-kill-ring-insert
   ;; M-<return> browse-kill-ring-insert-move-and-quit
   ;; <mouse-2>	browse-kill-ring-mouse-insert
-  :demand t
   :custom
   (browse-kill-ring-highlight-current-entry t)
   (browse-kill-ring-highlight-inserted-item 'pulse)
@@ -428,23 +417,18 @@ NAME and ARGS are in `use-package'."
   (browse-kill-ring-default-keybindings))
 
 (use-feature tab-bar
-  ;; TAB NEXT -> C-TAB
-  ;; TAB PREV -> C-S-TAB
-  :defer 3
-  :bind (("C-c TAB n" . tab-new)
-         ("C-c TAB k" . tab-close)
-         ("C-c TAB /" . tab-undo)
-         ("C-c TAB ?" . tab-switch))
   :custom
   (tab-bar-close-button-show nil)
   (tab-bar-new-button-show nil)
-  (tab-bar-show 1))
+  :config
+  (tab-bar-mode +1))
 
 (use-feature tab-line
-  :defer 3
   :custom
   (tab-line-close-button-show nil)
-  (tab-line-new-button-show   nil))
+  (tab-line-new-button-show   nil)
+  :config
+  (tab-line-mode +1))
 
 (use-feature ediff
   :hook (ediff-quit . winner-undo)
@@ -453,7 +437,6 @@ NAME and ARGS are in `use-package'."
   (ediff-split-window-function #'split-window-horizontally))
 
 (use-feature project
-  :defer 3
   :custom
   (project-switch-commands
    '((project-find-file "Find file" "f")
@@ -473,17 +456,14 @@ NAME and ARGS are in `use-package'."
   (add-hook 'project-find-functions #'project-find-go-module))
 
 (use-feature vc-hooks
-  :defer 1
   :custom
   (vc-follow-symlinks t "Visit real file when editing a symlink no prompting."))
 
 (use-feature tooltip
-  :defer 2
   :custom
   (tooltip-delay 1.5))
 
 (use-feature simple
-  :defer 2
   :bind (("M-z"     . zap-to-char)
          ("M-Z"     . zap-up-to-char)
          ("C-."     . set-mark-command)
@@ -501,28 +481,23 @@ NAME and ARGS are in `use-package'."
 
 (use-package page-break-lines
   ;; C-q C-l for page break
-  :defer 2
   :diminish (page-break-lines-mode)
   :config
   (global-page-break-lines-mode +1))
 
 (use-package whole-line-or-region
-  :defer 4
   :diminish (whole-line-or-region-local-mode)
   :config
   (whole-line-or-region-global-mode +1))
 
 (use-feature autoinsert
-  :defer 2
   :config
   (auto-insert-mode +1))
 
 (use-feature remember
-  :defer 2
   :bind ("C-x M-r" . remember))
 
 (use-feature repeat
-  :defer 4
   :config
   (repeat-mode +1))
 
@@ -531,7 +506,6 @@ NAME and ARGS are in `use-package'."
   :hook (prog-mode . hs-minor-mode))
 
 (use-feature isearch
-  :defer 3
   :custom
   (search-highlight t)
   (search-whitespace-regexp ".*?")
@@ -548,7 +522,6 @@ NAME and ARGS are in `use-package'."
   (isearch-allow-prefix t))
 
 (use-feature dired
-  :defer 2
   :custom
   (dired-dwim-target t)
   (dired-auto-revert-buffer t)
@@ -560,18 +533,11 @@ NAME and ARGS are in `use-package'."
   (dired-recursive-copies 'always)
   (dired-isearch-filenames 'dwim)
   (dired-create-destination-dirs 'ask)
-  :hook (dired-mode-hook . dired-omit-mode))
-
-(use-feature dired-async-mode
-  :defer 2
+  :hook (dired-mode-hook . dired-omit-mode)
   :config
   (dired-async-mode +1))
 
-(use-feature dired-x
-  :defer 2)
-
 (use-feature grep
-  :defer 5
   :custom
   (grep-highlight-matches 'auto)
   (grep-scroll-output t))
@@ -585,7 +551,6 @@ NAME and ARGS are in `use-package'."
               ("w" . wgrep-change-to-wgrep-mode)))
 
 (use-package which-key
-  :defer 5
   :diminish (which-key-mode)
   :custom
   (which-key-enable-extended-define-key t)
@@ -597,17 +562,15 @@ NAME and ARGS are in `use-package'."
   (which-key-mode +1))
 
 (use-package avy
-  ;; TODO
+  :bind (("s-j"   . avy-goto-char-timer)
+         ("C-c j" . avy-goto-line)
+         :map isearch-mode-map
+         ("s-j" . avy-isearch))
   :custom
   (avy-background t)
-  (avy-style 'at-full)
-  :bind (("C-'"   . avy-goto-char-timer)
-         ("M-g g" . avy-goto-line)
-         :map isearch-mode-map
-         ("M-j" . avy-isearch)))
+  (avy-style 'at-full))
 
 (use-package winum
-  :defer 3
   :bind (:map winum-keymap
               ("M-0" . winum-select-window-0-or-10)
               ("M-1" . winum-select-window-1)
@@ -641,7 +604,6 @@ NAME and ARGS are in `use-package'."
   :bind (("M-o" . ace-window)))
 
 (use-package crux
-  :defer 5
   :bind (("C-o"     . crux-smart-open-line)
          ("C-S-o"   . crux-smart-open-line-above)
          ("C-c d"   . crux-duplicate-current-line-or-region)
@@ -651,15 +613,12 @@ NAME and ARGS are in `use-package'."
          ("C-c e"   . crux-visit-shell-buffer)))
 
 (use-package goto-chg
-  :defer 3
   :bind (("C-M-'" . goto-last-change)))
 
 (use-package expand-region
-  :defer 3
   :bind ("C-=" . er/expand-region))
 
 (use-package hl-todo
-  :defer 5
   :custom
   (hl-todo-highlight-punctuation ":")
   :config
@@ -734,7 +693,6 @@ NAME and ARGS are in `use-package'."
   ;;   "C-S-b"   #'ido-bury-buffer-at-head
   ;;   "C-o"     #'ido-toggle-virtual-buffers
 
-  :demand t
   :bind (
          ;; Find Files
          ("C-x C-f"   . ido-find-file)
@@ -755,6 +713,7 @@ NAME and ARGS are in `use-package'."
   (ido-buffer-disable-smart-matches nil)
   (ido-use-filename-at-point 'guess)
   (ido-use-url-at-point 'guess)
+  (ido-virtual-buffers t)
   (ido-use-virtual-buffers 'auto)
   (ido-max-window-height 1)
   (ido-use-faces t)
@@ -763,28 +722,19 @@ NAME and ARGS are in `use-package'."
   (ido-everywhere +1))
 
 (use-package ido-completing-read+
-  :demand t
   :config
   (ido-ubiquitous-mode +1))
 
 (use-package ido-at-point
   ;; Use C-M-i
-  :demand t
   :config
   (ido-at-point-mode +1))
 
 (use-package crm-custom
-  :demand t
   :config
   (crm-custom-mode +1))
 
-(use-feature icomplete
-  :after (ido)
-  :config
-  (icomplete-mode +1))
-
 (use-package amx
-  :demand t
   :config
   (amx-mode +1))
 
@@ -797,12 +747,10 @@ NAME and ARGS are in `use-package'."
 ;; NEW
 
 (use-feature find-func
-  :defer 3
   :custom
   (find-library-include-other-files nil))
 
 (use-feature which-func
-  :defer 2
   :config
   (which-function-mode +1))
 
@@ -814,9 +762,22 @@ NAME and ARGS are in `use-package'."
           python-ts-mode) . subword-mode))
 
 ;; Buffer Completion
+
+(use-package corfu
+  :bind
+  (:map corfu-map
+        ("C-n" . corfu-next)
+        ("C-p" . corfu-previous))
+  :config
+  (global-corfu-mode +1))
+
+(use-package cape
+  :config
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-file))
+
 ;; TODO
 ;; (use-package yasnippet
-;;   :defer 5
 ;;   :config
 ;;   (yas-global-mode +1))
 
@@ -824,7 +785,6 @@ NAME and ARGS are in `use-package'."
 
 ;;; Git
 (use-package magit
-  :defer 6
   :custom
   (magit-bury-buffer-function #'quit-window)
   (magit-diff-refine-hunk t)
@@ -839,7 +799,6 @@ NAME and ARGS are in `use-package'."
 (use-package magit-todos)
 
 (use-package git-modes
-  :defer 6
   :config
   (add-to-list 'auto-mode-alist
                (cons "/.dockerignore\\'" 'gitignore-mode)))
@@ -853,7 +812,6 @@ NAME and ARGS are in `use-package'."
 
 ;;; Org
 (use-package org
-  :defer 9
   :custom
   (org-clock-persist 'history)
   :config
@@ -867,13 +825,12 @@ NAME and ARGS are in `use-package'."
 
 ;; Documentation
 (use-feature eldoc
-  :defer 3
   :custom
   (eldoc-idle-delay 0.2)
   :config
   (global-eldoc-mode +1))
 
-(use-package devdocs)
+;; (use-package devdocs)
 
 ;; Linting
 (use-feature flyspell
@@ -884,7 +841,6 @@ NAME and ARGS are in `use-package'."
 
 ;; LSP
 (use-package eglot
-  :defer 9
   :custom
   (eglot-autoshutdown t)
   (eglot-events-buffer-size 0)
@@ -908,14 +864,12 @@ NAME and ARGS are in `use-package'."
 
 ;; Debugger
 (use-feature gdb-mi
-  :defer 8
   :custom
   (gdb-many-windows t)
   (gdb-show-main t))
 
 ;; Command to start RDBG: rdbg command-cwd "/home/macpapo/Code/Ruby/Rails/prova/" -c "bin/rails s --port 3000"
 (use-package dape
-  :defer 8
   :hook ((kill-emacs . dape-breakpoint-save)  ; Save breakpoint on quit
          (after-init . dape-breakpoint-load)) ; Load breakpoint on startup
   :init
@@ -943,25 +897,25 @@ NAME and ARGS are in `use-package'."
 
 (use-package ssh-config-mode)
 
-(use-package editorconfig
-  :defer 10
-  :diminish (editorconfig-mode)
-  :config
-  (editorconfig-mode +1))
+;; TODO
+;; (use-package editorconfig
+;;   :diminish (editorconfig-mode)
+;;   :config
+;;   (editorconfig-mode +1))
 
-(use-package editorconfig-generate)
+;; (use-package editorconfig-generate)
 
-(use-package dtrt-indent
-  :after (editorconfig)
-  :config
-  (add-hook
-   'editorconfig-after-apply-functions
-   (lambda (props)
-     "Adjust indentation if `editorconfig' hasn't changed it"
-     (unless (and (gethash 'indent_style props)
-                  (gethash 'indent_size props))
-       (message "No EditorConfig properties found, falling back to dtrt-indent")
-       (dtrt-indent-mode 1)))))
+;; (use-package dtrt-indent
+;;   :after (editorconfig)
+;;   :config
+;;   (add-hook
+;;    'editorconfig-after-apply-functions
+;;    (lambda (props)
+;;      "Adjust indentation if `editorconfig' hasn't changed it"
+;;      (unless (and (gethash 'indent_style props)
+;;                (gethash 'indent_size props))
+;;        (message "No EditorConfig properties found, falling back to dtrt-indent")
+;;        (dtrt-indent-mode 1)))))
 
 (use-package rainbow-delimiters
   :hook (prog-mode))
@@ -988,7 +942,6 @@ NAME and ARGS are in `use-package'."
 
 ;; (use-feature treesit
 ;;   ;; Experiment (C-TS-MODE, JAVA-TS-MODE crash)
-;;   :defer 4
 ;;   :config
 ;;   (setq treesit-language-source-alist
 ;;         '((bash       . ("https://github.com/tree-sitter/tree-sitter-bash"))
@@ -1037,7 +990,6 @@ NAME and ARGS are in `use-package'."
 
 ;; RUBY
 (use-package rvm
-  :defer 20
   :config
   (rvm-use-default))
 
@@ -1085,12 +1037,7 @@ NAME and ARGS are in `use-package'."
 
   ;; Open files with .cl extension in lisp-mode
   (add-to-list 'auto-mode-alist '("\\.cl\\'" . lisp-mode))
-  (slime-setup '(slime-fancy
-                 slime-cl-indent
-                 slime-repl-ansi-color)))
-
-(use-package slime-repl-ansi-color
-  :after (slime))
+  (slime-setup '(slime-fancy)))
 
 (use-package elisp-slime-nav
   :diminish (elisp-slime-nav-mode)
@@ -1206,7 +1153,6 @@ NAME and ARGS are in `use-package'."
 (use-package mermaid-mode)
 
 (use-feature gnus
-  :defer 20
   :bind (:map gnus-group-mode-map
               ("o" . my-gnus-group-list-subscribed-groups))
   :hook ((message-mode . (lambda ()

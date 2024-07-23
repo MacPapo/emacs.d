@@ -28,7 +28,9 @@
 (defconst *is-a-linux* (or (eq system-type 'gnu)
                            (eq system-type 'gnu/linux)))
 
-(setq package-enable-at-startup t)
+(setq byte-compile-warnings '(not obsolete))
+(setq warning-suppress-log-types '((comp) (bytecomp)))
+
 (setq inhibit-default-init nil)
 
 (setq native-comp-deferred-compilation t
@@ -36,17 +38,13 @@
       native-comp-async-jobs-number 4
       native-comp-async-report-warnings-errors 'silent)
 
-(setq package-archives '(("melpa"  . "https://melpa.org/packages/")
-                         ("gnu"    . "https://elpa.gnu.org/packages/")
-                         ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
-
 ;; PERF: A second, case-insensitive pass over `auto-mode-alist' is time wasted.
 (setq auto-mode-case-fold nil)
 
 ;; PERF: Disable bidirectional text scanning for a modest performance boost.
 ;;   I've set this to `nil' in the past, but the `bidi-display-reordering's docs
 ;;   say that is an undefined state and suggest this to be just as good:
-(setq-default bidi-display-reordering 'left-to-right
+(setq-default bidi-display-reordering t
               bidi-paragraph-direction 'left-to-right)
 
 ;; PERF: Disabling BPA makes redisplay faster, but might produce incorrect
@@ -58,11 +56,6 @@
 ;; in non-focused windows.
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
-
-;; More performant rapid scrolling over unfontified regions. May cause brief
-;; spells of inaccurate syntax highlighting right after scrolling, which should
-;; quickly self-correct.
-(setq fast-but-imprecise-scrolling t)
 
 ;; Don't ping things that look like domain names.
 (setq ffap-machine-p-known 'reject)
@@ -91,15 +84,16 @@
 ;;   that isn't necessary this early in the startup process.
 (push '(menu-bar-lines . 0)   default-frame-alist)
 (push '(tool-bar-lines . 0)   default-frame-alist)
-(push '(vertical-scroll-bars) default-frame-alist)
-
-(setq server-client-instructions nil)
+(push '(vertical-scroll-bars . 0) default-frame-alist)
+(push '(horizontal-scroll-bars . 0) default-frame-alist)
+(push '(fullscreen . maximized) default-frame-alist)
 
 ;; And set these to nil so users don't have to toggle the modes twice to
 ;; reactivate them.
-(setq menu-bar-mode nil
-      tool-bar-mode nil
-      scroll-bar-mode nil)
+(setopt menu-bar-mode nil
+        tool-bar-mode nil
+        scroll-bar-mode nil
+        horizontal-scroll-bar-mode nil)
 
 ;; FIX: On MacOS, disabling the menu bar makes MacOS treat Emacs as a
 ;;   non-application window -- which means it doesn't automatically capture
@@ -114,7 +108,8 @@
       (when (display-graphic-p use-frame)
         (set-frame-parameter use-frame 'menu-bar-lines 1)))))
 
-(setq frame-resize-pixelwise t
+(setq window-resize-pixelwise t
+      frame-resize-pixelwise t
       frame-inhibit-implied-resize t
       use-dialog-box t ; only for mouse events, which I seldom use
       use-file-dialog nil
@@ -146,13 +141,6 @@
 (setq default-input-method nil)
 (global-so-long-mode 1)
 
-(define-advice load-file (:override (file) silence)
-  (load file nil 'nomessage))
-
-(setq window-resize-pixelwise t
-      initial-major-mode 'fundamental-mode
-      initial-scratch-message ";; Happy Hacking\n\n")
-
 (setq read-process-output-max (* 3 1024 1024)) ;; 3mb
 
 (defvar default-file-name-handler-alist file-name-handler-alist)
@@ -174,7 +162,8 @@
    (lambda ()
      (setq file-name-handler-alist default-file-name-handler-alist
            gc-cons-percentage 0.1
-           gc-cons-threshold 8000000)
+           gc-cons-threshold 8000000
+           gc-collection-messages "Sto pulendo")
      (when (boundp 'after-focus-change-function)
        (add-function :after
                      after-focus-change-function
