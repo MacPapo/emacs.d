@@ -1,6 +1,6 @@
-;;; init.el --- My Emacs configuration               -*- lexical-binding: t; -*-
+;;; init.el --- My Emacs configuration  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024  Jacopo Costantini
+;; Copyright (C) 2024, 2025  Jacopo Costantini
 
 ;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
 ;; Keywords:
@@ -19,493 +19,198 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
 ;; Simple yet powerful configuration
 
 ;;; Code:
 
-;;; Guardrail
-
-(when (< emacs-major-version 29)
-  (error "This Emacs Config only works with Emacs 29 and newer; you have version %s" emacs-major-version))
-
-(with-eval-after-load 'package
-  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
-
-(require 'use-package)
-(with-eval-after-load 'use-package
-  (setq use-package-always-ensure t))
-
-(defmacro use-feature (name &rest args)
-  "Like `use-package' but accounting for asynchronous installation.
-NAME and ARGS are in `use-package'."
-  (declare (indent defun))
-  `(use-package ,name
-     :ensure nil
-     ,@args))
-
-(setq initial-buffer-choice t) ;;*scratch*
-
-;; Make right-click do something sensible
-(when (display-graphic-p)
-  (context-menu-mode))
-
-(when (or *is-a-mac*
-          *is-a-linux*)
-
-  ;; Enable horizontal scrolling
-  (setopt mouse-wheel-tilt-scroll t)
-  (setopt mouse-wheel-flip-direction t)
-
-  ;; Misc. UI tweaks
-  (blink-cursor-mode)                   ; Steady cursor
-  (pixel-scroll-precision-mode)         ; Smooth scrolling
-
-  (use-package exec-path-from-shell
-    :config
-    (exec-path-from-shell-initialize))
-
-  (if *is-a-mac*
-      (progn
-        (setq mac-mouse-wheel-smooth-scroll nil)
-        (setq mac-command-modifier 'meta)
-        (setq mac-option-modifier 'none)
-        (setq ns-function-modifier 'hyper)
-        (setq-default locate-command "mdfind")
-
-        (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-        (add-to-list 'default-frame-alist '(ns-appearance . light))
-
-        (setq ns-use-proxy-icon nil)
-        (setq frame-title-format nil)
-
-        (use-package reveal-in-osx-finder)
-
-        (use-package osx-trash
-          :config
-          (osx-trash-setup))
-
-        ;; GNU utils
-        (let ((gls (executable-find "gls")))
-          (when gls (setq insert-directory-program gls))))
-    ;; TODO write linux only prefs
-    ))
-
-
-(use-feature cus-edit
-  :custom
-  (custom-file null-device "Don't store customizations"))
-
-(use-feature emacs
-  :custom
-  (indicate-buffer-boundaries 'left)
-  (x-underline-at-descent-line nil)
-  (tab-always-indent 'complete)
-  (auto-save-list-file-prefix nil)
-  (tags-revert-without-query t)
-  (font-lock-maximum-decoration t)
-  (use-short-answers t)
-  (case-fold-search t)
-  (create-lockfiles nil)
-  (truncate-lines nil)
-  (truncate-partial-width-windows nil)
-  (max-lisp-eval-depth 10000)
-  (locale-coding-system 'utf-8)
-  (coding-system-for-read 'utf-8)
-  (coding-system-for-write 'utf-8)
-  (sentence-end-double-space nil)
+(use-package emacs
   :init
-  (set-charset-priority 'unicode)
-  (set-default-coding-systems 'utf-8)
-  (set-terminal-coding-system 'utf-8)
-  (set-keyboard-coding-system 'utf-8)
-  (set-selection-coding-system 'utf-8)
-  (prefer-coding-system 'utf-8))
-
-(use-package acme-theme
-  :custom
-  (acme-theme-black-fg t)
-  :config
-  (load-theme 'acme t)
-  ;; (load-theme 'modus-vivendi t)
-  )
-
-(use-feature frame
-  :custom
-  (blink-cursor-interval 0.4)
-  :config
-  (set-frame-font "Iosevka 12" nil t))
-
-(use-feature mb-depth
-  :custom
-  (enable-recursive-minibuffers t)
-  :config
-  (minibuffer-depth-indicate-mode +1))
-
-(use-feature minibuffer
-  :custom
-  (completion-cycle-threshold 1)
-  (completion-auto-help 'lazy)
-  (completions-format 'one-column)
-  (completions-group t)
-  (completion-auto-select 'second-tab)
-  (completion-styles '(basic initials partial-completion substring emacs22)))
-
-(use-feature whitespace
-  :diminish (global-whitespace-mode)
-  :custom
-  (whitespace-line-column 80)
-  (whitespace-global-modes
-   '(not shell-mode
-         eshell-mode
-         help-mode
-         magit-mode
-         magit-diff-mode
-         ibuffer-mode
-         dired-mode
-         occur-mode))
-  (whitespace-action
-   '(cleanup auto-cleanup))
-  (whitespace-style
-   '(face trailing tabs spaces newline missing-newline-at-eof empty indentation
-          space-after-tab space-before-tab space-mark tab-mark newline-mark))
-  :config
-  (global-whitespace-mode +1))
-
-(use-feature executable
-  :hook (after-save . executable-make-buffer-file-executable-if-script-p))
-
-;; MISC
-(use-package diminish)
-
-(use-package mode-line-bell
-  :config
-  (mode-line-bell-mode +1))
-
-(use-feature delsel
-  :config
-  (delete-selection-mode +1))
-
-(use-feature display-line-numbers
-  :hook (prog-mode)
-  :custom
-  (display-line-numbers-grow-only t)
-  (display-line-numbers-width 4))
-
-(use-feature display-fill-column-indicator
-  :hook (prog-mode)
-  :custom
-  (fill-column 80)
-  (display-fill-column-indicator-character
-   (plist-get '( triple-pipe  ?┆
-                 double-pipe  ?╎
-                 double-bar   ?║
-                 solid-block  ?█
-                 empty-bullet ?◦)
-              'double-bar))
-  :config
-  (set-face-attribute 'fill-column-indicator nil
-                      :foreground "#717C7C"))
-
-(use-feature paren
-  :custom
-  (show-paren-ring-bell-on-mismatch t)
-  :config
-  (show-paren-mode +1))
-
-(use-feature elec-pair
-  :config
-  (electric-pair-mode +1))
-
-(use-feature electric
-  :config
-  (electric-indent-mode +1))
-
-(use-package aggressive-indent
-  :diminish (aggressive-indent-mode)
-  :hook ((emacs-lisp-mode
-          lisp-mode
-          lisp-interaction-mode) . aggressive-indent-mode))
-
-(use-feature savehist
-  :custom
-  (history-length 100)
-  (history-delete-duplicates t)
-  (savehist-autosave-interval 300)
-  (savehist-additional-variables '(kill-ring search-ring regexp-search-ring))
-  :config
-  (savehist-mode +1))
-
-(use-feature saveplace
-  :config
-  (save-place-mode +1))
-
-(use-feature autorevert
-  :custom
-  (auto-revert-avoid-polling t)
-  (global-auto-revert-non-file-buffers t)
-  (auto-revert-verbose nil)
-  (auto-revert-check-vc-info t)
-  (auto-revert-interval 5 "5 sec revert")
-  :config
-  (global-auto-revert-mode +1))
-
-(use-feature help
-  :custom
-  (help-window-select t "Always select the help window"))
-
-(use-feature copyright
-  :hook (before-save . copyright-update))
-
-(use-feature bookmark
-  :custom
-  (bookmark-default-file (locate-user-emacs-file ".bookmarks.el")))
-
-(use-feature files
-  :custom
-  (require-final-newline t)
-  (confirm-kill-emacs 'yes-or-no-p)
-  (version-control t)
-  (vc-make-backup-files nil)
-  (delete-old-versions t)
-  (kept-new-versions 6)
-  (kept-old-versions 2)
-  (auto-save-default t)
-  (auto-save-timeout 20)
-  (auto-save-interval 200)
-  (make-backup-files t)
-  (backup-by-copying t)
-  :config
-  ;; Don't litter file system with *~ backup files; put them all inside
-  ;; ~/.emacs.d/backup or wherever
-  (defun bedrock--backup-file-name (fpath)
-    "Return a new file path of a given file path.
-If the new path's directories does not exist, create them."
-    (let* ((backupRootDir (concat user-emacs-directory "emacs-backup/"))
-           (filePath (replace-regexp-in-string "[A-Za-z]:" "" fpath )) ; remove Windows driver letter in path
-           (backupFilePath (replace-regexp-in-string "//" "/" (concat backupRootDir filePath "~") )))
-      (make-directory (file-name-directory backupFilePath) (file-name-directory backupFilePath))
-      backupFilePath))
-  (setopt make-backup-file-name-function 'bedrock--backup-file-name))
-
-(use-feature calendar
-  :custom
-  (calendar-week-start-day 1))
-
-(use-feature holidays
-  :commands (org-agenda)
-  :custom
-  (holiday-bahai-holidays nil)
-  (holiday-hebrew-holidays nil)
-  (holiday-islamic-holidays nil)
-  (holiday-oriental-holidays nil))
-
-(use-feature timeclock
-  ;; TODO
-  :custom
-  (timeclock-mode-line-display nil)
-  :bind (("C-c T i" . timeclock-in)
-         ("C-c T o" . timeclock-out)
-         ("C-c T c" . timeclock-change)
-         ("C-c T r" . timeclock-reread-log)
-         ("C-c T u" . timeclock-update-mode-line)
-         ("C-c T w" . timeclock-when-to-leave-string)))
-
-(use-feature compile
-  :commands (compile recompile)
-  :custom
-  (compilation-scroll-output 'first-error)
-  (compilation-window-height 15)
-  :bind ([f5] . recompile)
-  :config
-  (defun +compilation-colorize ()
-    "Colorize from `compilation-filter-start' to `point'."
-    (require 'ansi-color)
-    (let ((inhibit-read-only t))
-      (ansi-color-apply-on-region (point-min) (point-max))))
-  (add-hook 'compilation-filter-hook #'+compilation-colorize))
-
-(use-feature hl-line
-  :config
-  (global-hl-line-mode +1))
-
-(use-feature recentf
-  :custom
-  (recentf-max-menu-items 15)
-  (recentf-max-saved-items 500)
-  (recentf-auto-cleanup 'never)
-  :config
-  (recentf-mode +1))
-
-(use-feature time
-  :custom
-  (display-time-default-load-average nil "Dont show load avg")
-  (display-time-format "%a %F %T")
-  (display-time-interval 1)
-  :config
-  ;; Add the time to the tab-bar, if visible
-  (add-to-list 'tab-bar-format 'tab-bar-format-align-right 'append)
-  (add-to-list 'tab-bar-format 'tab-bar-format-global 'append)
-  (display-time-mode +1))
-
-(use-feature tramp
-  :custom
-  (tramp-inline-compress-start-size 1000000)
-  (tramp-default-method "ssh")
-  (tramp-backup-directory-alist backup-directory-alist))
-
-(use-feature winner
-  :bind (("M-N" . winner-undo)
-         ("M-P" . winner-redo))
-  :custom
-  (winner-boring-buffers '("*Completions*"
-                           "*Compile-Log*"
-                           "*inferior-lisp*"
-                           "*Fuzzy Completions*"
-                           "*Apropos*"
-                           "*Help*"
-                           "*cvs*"
-                           "*Buffer List*"
-                           "*Ibuffer*"
-                           "*mu4e-loading*"
-                           ))
-  :config
-  (winner-mode +1))
-
-(use-feature window
-  :custom
-  (switch-to-buffer-obey-display-actions t)
-  (switch-to-prev-buffer-skip-regexp
-   '("\\*Help\\*" "\\*Calendar\\*" "\\*mu4e-last-update\\*"
-     "\\*Messages\\*" "\\*scratch\\*" "\\magit-.*")))
-
-(use-feature uniquify
-  :custom
-  (uniquify-buffer-name-style 'reverse)
-  (uniquify-separator " • ")
-  (uniquify-after-kill-buffer-p t)
-  (uniquify-ignore-buffers-re "^\\*"))
-
-(use-package browse-kill-ring
-  ;; C-g	browse-kill-ring-quit
-  ;; RET	browse-kill-ring-insert-and-quit
-  ;; ?		describe-mode
-  ;; U		browse-kill-ring-undo-other-window
-  ;; a		browse-kill-ring-append-insert
-  ;; b		browse-kill-ring-prepend-insert
-  ;; d		browse-kill-ring-delete
-  ;; e		browse-kill-ring-edit
-  ;; g		browse-kill-ring-update
-  ;; h		describe-mode
-  ;; i		browse-kill-ring-insert
-  ;; l		browse-kill-ring-occur
-  ;; n		browse-kill-ring-forward
-  ;; o		browse-kill-ring-insert-and-move
-  ;; p		browse-kill-ring-previous
-  ;; q		browse-kill-ring-quit
-  ;; r		browse-kill-ring-search-backward
-  ;; s		browse-kill-ring-search-forward
-  ;; u		browse-kill-ring-insert-move-and-quit
-  ;; x		browse-kill-ring-insert-and-delete
-  ;; y		browse-kill-ring-insert
-  ;; M-<return> browse-kill-ring-insert-move-and-quit
-  ;; <mouse-2>	browse-kill-ring-mouse-insert
-  :custom
-  (browse-kill-ring-highlight-current-entry t)
-  (browse-kill-ring-highlight-inserted-item 'pulse)
-  :config
-  (browse-kill-ring-default-keybindings))
-
-(use-feature tab-bar
-  :custom
-  (tab-bar-close-button-show nil)
-  (tab-bar-new-button-show nil)
-  :config
-  (tab-bar-mode +1))
-
-(use-feature tab-line
-  :custom
-  (tab-line-close-button-show nil)
-  (tab-line-new-button-show   nil)
-  :config
-  (tab-line-mode +1))
-
-(use-feature ediff
-  :hook (ediff-quit . winner-undo)
-  :custom
-  (ediff-window-setup-function #'ediff-setup-windows-plain)
-  (ediff-split-window-function #'split-window-horizontally))
-
-(use-feature project
-  :custom
-  (project-switch-commands
-   '((project-find-file "Find file" "f")
-     (project-find-regexp "Find regexp" "r")
-     (project-find-dir "Find directory" "d")
-     (project-dired "Root dired" "D")
-     (project-eshell "Eshell" "e")
-     (magit-project-status "Git" "g")))
-  :config
-  (defun project-find-go-module (dir)
-    (when-let ((root (locate-dominating-file dir "go.mod")))
-      (cons 'go-module root)))
-
-  (cl-defmethod project-root ((project (head go-module)))
-    (cdr project))
-
-  (add-hook 'project-find-functions #'project-find-go-module))
-
-(use-feature vc-hooks
-  :custom
-  (vc-follow-symlinks t "Visit real file when editing a symlink no prompting."))
-
-(use-feature tooltip
-  :custom
-  (tooltip-delay 1.5))
-
-(use-feature simple
-  :bind (("M-z"     . zap-to-char)
-         ("M-Z"     . zap-up-to-char)
-         ("C-."     . set-mark-command)
-         ("C-x C-." . pop-global-mark)
-         ("M-j"     . join-line))
+  (require 'package)
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+  (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+  (setopt custom-file (locate-user-emacs-file "custom.el"))
+  (load custom-file :no-error-if-file-is-missing)
   :custom
   (save-interprogram-paste-before-kill t)
-  (column-number-mode t)
+  (tab-always-indent 'complete)
+  (text-mode-ispell-word-completion nil)
   (line-number-mode t)
+  (column-number-mode t)
   (size-indication-mode t)
+  (use-short-answers t)
+  (confirm-kill-emacs 'yes-or-no-p)
+  (switch-to-buffer-obey-display-actions t)
+  (history-delete-duplicates t)
+  (enable-recursive-minibuffers t)
+  (create-lockfiles nil)
+  (x-underline-at-descent-line t)
+  (set-mark-command-repeat-pop t)
+  (sentence-end-double-space nil)
+  (custom-safe-themes t)
   (kill-do-not-save-duplicates t)
-  (indent-tabs-mode nil "Use spaces, not tabs")
   (mark-ring-max 60)
-  (global-mark-ring-max 200))
+  (global-mark-ring-max 200)
+  (delete-by-moving-to-trash t)
+  (load-prefer-newer t)
+  (user-full-name "Jacopo Costantini")
+  (user-mail-address "jacopocostantini32@gmail.com")
+  (context-menu-mode t)
+  (read-extended-command-predicate #'command-completion-default-include-p)
+  (minibuffer-prompt-properties
+   '(read-only t cursor-intangible t face minibuffer-prompt))
 
-(use-package page-break-lines
-  ;; C-q C-l for page break
-  :diminish (page-break-lines-mode)
+  ;; BACKUP
+  (backup-directory-alist `((".*" . ,(concat user-emacs-directory "backups"))))
+  (backup-by-copying t)
+  (version-control t)
+  (delete-old-versions t)
+  (kept-new-versions 10)
+  (kept-old-versions 5)
+  
+  ;; AUTOSAVE
+  (auto-save-file-name-transforms `((".*" ,(concat user-emacs-directory "backups") t)))
+  (auto-save-interval 2400)
+  (auto-save-timeout 300)
   :config
-  (global-page-break-lines-mode +1))
+  (let ((mono-spaced-font "Monospace")
+	(proportionately-spaced-font "Sans"))
+    (set-face-attribute 'default nil :family mono-spaced-font :height 100)
+    (set-face-attribute 'fixed-pitch nil :family mono-spaced-font :height 1.0)
+    (set-face-attribute 'variable-pitch nil :family proportionately-spaced-font :height 1.0))
+  (add-to-list 'save-some-buffers-action-alist
+               (list "d"
+                     (lambda (buffer) (diff-buffer-with-file (buffer-file-name buffer)))
+                     "show diff between the buffer and its file"))
+  (when (< emacs-major-version 31)
+    (advice-add #'completing-read-multiple :filter-args
+		(lambda (args)
+                  (cons (format "[CRM%s] %s"
+				(string-replace "[ \t]*" "" crm-separator)
+				(car args))
+			(cdr args))))))
 
-(use-package whole-line-or-region
-  :diminish (whole-line-or-region-local-mode)
+(use-package emacs
+  :if (eq system-type 'darwin)
   :config
-  (whole-line-or-region-global-mode +1))
+  (setopt mac-command-modifier 'meta)
+  (setopt mac-option-modifier 'none)
+  (setopt mac-function-modifier 'hyper)
 
-(use-feature autoinsert
-  :config
-  (auto-insert-mode +1))
+  (setopt ns-use-proxy-icon nil)
 
-(use-feature remember
-  :bind ("C-x M-r" . remember))
+  (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+  (add-to-list 'default-frame-alist '(ns-appearance . dark))
 
-(use-feature repeat
+  (let ((mono-spaced-font "Go Mono")
+	(proportionately-spaced-font "Go"))
+    (set-face-attribute 'default nil :family mono-spaced-font :height 130)
+    (set-face-attribute 'fixed-pitch nil :family mono-spaced-font :height 1.0)
+    (set-face-attribute 'variable-pitch nil :family proportionately-spaced-font :height 1.0))
+
+  (use-package exec-path-from-shell
+    :demand t
+    :ensure t
+    :config
+    (exec-path-from-shell-initialize)
+    (let ((gls (executable-find "gls")))
+      (when gls (progn
+		  (setq insert-directory-program gls))))))
+
+;;; Built-in
+
+(use-package uniquify
+  :init (setq uniquify-buffer-name-style 'forward))
+
+(use-package repeat
   :config
   (repeat-mode +1))
 
-(use-feature hideshow
-  :diminish (hs-minor-mode)
-  :hook (prog-mode . hs-minor-mode))
+(use-package delsel
+  :hook (after-init . delete-selection-mode))
 
-(use-feature isearch
+(use-package recentf
+  :hook (after-init . recentf-mode)
+  :custom
+  (recentf-max-saved-items 200)
+  (recentf-auto-cleanup 300)
+  :config
+  (define-advice recentf-cleanup (:around (fun) silently)
+    (let ((inhibit-message t)
+          (message-log-max nil))
+      (funcall fun))))
+
+(use-package savehist
+  :hook (after-init . savehist-mode)
+  :custom
+  (history-length 1000)
+  (history-delete-duplicates t)
+  (savehist-additional-variables '(kill-ring search-ring regexp-search-ring))
+  (savehist-save-minibuffer-history t))
+
+(use-package saveplace
+  :hook (after-init . save-place-mode))
+
+(use-package desktop
+  :defer
+  :custom
+  (desktop-auto-save-timeout 300)
+  (desktop-base-file-name "desktop")
+  (desktop-restore-forces-onscreen nil)
+  (desktop-globals-to-clear nil)
+  (desktop-load-locked-desktop t)
+  (desktop-missing-file-warning nil)
+  (desktop-restore-eager 20)
+  (desktop-restore-frames t)
+  (desktop-save 'ask-if-new))
+
+(use-package elec-pair
+  :hook (after-init . electric-pair-mode))
+
+(use-package electric
+  :hook (after-init . electric-indent-mode))
+
+(use-package autorevert
+  :hook (after-init . global-auto-revert-mode)
+  :custom
+  (auto-revert-verbose nil)
+  (auto-revert-avoid-polling t)
+  (auto-revert-check-vc-info t)
+  (auto-revert-interval 5)
+  (global-auto-revert-non-file-buffers t))
+
+(use-package help
+  :custom
+  (help-window-select t "Always select the help window"))
+
+(use-package copyright
+  :hook (before-save . copyright-update))
+
+(use-package calendar
+  :custom
+  (calendar-week-start-day 1))
+
+(use-package winner
+  :hook (after-init . winner-mode))
+
+(use-package display-line-numbers
+  :hook (prog-mode . display-line-numbers-mode)
+  :custom
+  (display-line-numbers-width 3)
+  (display-line-numbers-grow-only t))
+
+(use-package display-fill-column-indicator
+  :hook (prog-mode . display-fill-column-indicator-mode)
+  :custom
+  (indicate-buffer-boundaries 'left)
+  (display-fill-column-indicator-character ?┊))
+
+(use-package so-long
+  :hook (after-init . global-so-long-mode))
+
+(use-package which-key
+  :hook (after-init . which-key-mode))
+
+(use-package isearch
   :custom
   (search-highlight t)
   (search-whitespace-regexp ".*?")
@@ -521,657 +226,390 @@ If the new path's directories does not exist, create them."
   (isearch-forward-thing-at-point '(region url email symbol sexp))
   (isearch-allow-prefix t))
 
-(use-feature dired
-  :custom
-  (dired-dwim-target t)
-  (dired-auto-revert-buffer t)
-  ;; (dired-listing-switches "-alh --group-directories-first" "Human friendly file sizes.")
-  ;; (dired-use-ls-dired nil)
-  (dired-kill-when-opening-new-dired-buffer t)
-  (dired-omit-files "\\(?:\\.+[^z-a]*\\)")
-  (dired-recursive-deletes 'always)
-  (dired-recursive-copies 'always)
-  (dired-isearch-filenames 'dwim)
-  (dired-create-destination-dirs 'ask)
-  :hook (dired-mode-hook . dired-omit-mode)
+(use-package dired
+  :commands (dired)
+  :hook
+  ((dired-mode . dired-hide-details-mode)
+   (dired-mode . hl-line-mode))
   :config
-  (dired-async-mode +1))
+  (setq dired-recursive-copies 'always)
+  (setq dired-recursive-deletes 'always)
+  (setq delete-by-moving-to-trash t)
+  (setq dired-dwim-target t))
 
-(use-feature grep
-  :custom
-  (grep-highlight-matches 'auto)
-  (grep-scroll-output t))
-
-(use-package wgrep
-  :after (grep)
-  :custom
-  (wgrep-auto-save-buffer t)
-  (wgrep-change-readonly-file t)
-  :bind (:map grep-mode-map
-              ("w" . wgrep-change-to-wgrep-mode)))
-
-(use-package which-key
-  :diminish (which-key-mode)
-  :custom
-  (which-key-enable-extended-define-key t)
-  (which-key-side-window-location 'bottom)
-  (which-key-sort-order 'which-key-key-order-alpha)
-  (which-key-side-window-max-width 0.33)
-  (which-key-idle-delay 0.2)
-  :config
-  (which-key-mode +1))
-
-(use-package avy
-  :bind (("s-j"   . avy-goto-char-timer)
-         ("C-c j" . avy-goto-line)
-         :map isearch-mode-map
-         ("s-j" . avy-isearch))
-  :custom
-  (avy-background t)
-  (avy-style 'at-full))
-
-(use-package winum
-  :bind (:map winum-keymap
-              ("M-0" . winum-select-window-0-or-10)
-              ("M-1" . winum-select-window-1)
-              ("M-2" . winum-select-window-2)
-              ("M-3" . winum-select-window-3)
-              ("M-4" . winum-select-window-4)
-              ("M-5" . winum-select-window-5)
-              ("M-6" . winum-select-window-6)
-              ("M-7" . winum-select-window-7)
-              ("M-8" . winum-select-window-8)
-              ("M-9" . winum-select-window-9))
-  :config
-  (winum-mode +1))
-
-(use-package ace-window
-  ;; x - delete window
-  ;; m - swap windows
-  ;; M - move window
-  ;; c - copy window
-  ;; j - select buffer
-  ;; n - select the previous window
-  ;; u - select buffer in the other window
-  ;; c - split window fairly, either vertically or horizontally
-  ;; v - split window vertically
-  ;; b - split window horizontally
-  ;; o - maximize current window
-  ;; ? - show these command bindings
-  :custom
-  (aw-dispatch-always t)
-  (aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
-  :bind (("M-o" . ace-window)))
-
-(use-package crux
-  :bind (("C-o"     . crux-smart-open-line)
-         ("C-S-o"   . crux-smart-open-line-above)
-         ("C-c d"   . crux-duplicate-current-line-or-region)
-         ("C-c M-d" . crux-duplicate-and-comment-current-line-or-region)
-         ("C-c k"   . crux-kill-other-buffers)
-         ("C-c t"   . crux-visit-term-buffer)
-         ("C-c e"   . crux-visit-shell-buffer)))
-
-(use-package goto-chg
-  :bind (("C-M-'" . goto-last-change)))
-
-(use-package expand-region
-  :bind ("C-=" . er/expand-region))
-
-(use-package hl-todo
-  :custom
-  (hl-todo-highlight-punctuation ":")
-  :config
-  (global-hl-todo-mode +1))
-
-;; Input Completion
-(use-feature ido
-  ;;   :doc "Keymap for all Ido commands."
-  ;;   :parent minibuffer-local-map
-  ;;   "C-a"     #'ido-toggle-ignore
-  ;;   "C-c"     #'ido-toggle-case
-  ;;   "C-e"     #'ido-edit-input
-  ;;   "TAB"     #'ido-complete
-  ;;   "SPC"     #'ido-complete-space
-  ;;   "C-j"     #'ido-select-text
-  ;;   "C-m"     #'ido-exit-minibuffer
-  ;;   "C-p"     #'ido-toggle-prefix
-  ;;   "C-r"     #'ido-prev-match
-  ;;   "C-s"     #'ido-next-match
-  ;;   "C-."     #'ido-next-match
-  ;;   "C-,"     #'ido-prev-match
-  ;;   "C-t"     #'ido-toggle-regexp
-  ;;   "C-z"     #'ido-undo-merge-work-directory
-  ;;   "C-SPC"   #'ido-restrict-to-matches
-  ;;   "M-SPC"   #'ido-take-first-match
-  ;;   "C-@"     #'ido-restrict-to-matches
-  ;;   "<right>" #'ido-next-match
-  ;;   "<left>"  #'ido-prev-match
-  ;;   "?"       #'ido-completion-help
-  ;;   "C-b"     #'ido-magic-backward-char
-  ;;   "C-f"     #'ido-magic-forward-char
-  ;;   "C-d"     #'ido-magic-delete-char
-
-  ;;   :doc "Keymap for Ido file and directory commands."
-  ;;   :parent ido-common-completion-map
-  ;;   "C-x C-b"     #'ido-enter-switch-buffer
-  ;;   "C-x C-f"     #'ido-fallback-command
-  ;;   "C-x C-d"     #'ido-enter-dired
-  ;;   "<down>"      #'ido-next-match-dir
-  ;;   "<up>"        #'ido-prev-match-dir
-  ;;   "M-<up>"      #'ido-prev-work-directory
-  ;;   "M-<down>"    #'ido-next-work-directory
-  ;;   "<backspace>" #'ido-delete-backward-updir
-  ;;   "DEL"         #'ido-delete-backward-updir
-  ;;   "<remap> <delete-backward-char>" #'ido-delete-backward-updir
-  ;;   "<remap> <backward-kill-word>"   #'ido-delete-backward-word-updir
-  ;;   "C-<backspace>" #'ido-up-directory
-  ;;   "C-l"   #'ido-reread-directory
-  ;;   "M-d"   #'ido-wide-find-dir-or-delete-dir
-  ;;   "M-b"   #'ido-push-dir
-  ;;   "M-v"   #'ido-push-dir-first
-  ;;   "M-f"   #'ido-wide-find-file-or-pop-dir
-  ;;   "M-k"   #'ido-forget-work-directory
-  ;;   "M-m"   #'ido-make-directory
-  ;;   "M-n"   #'ido-next-work-directory
-  ;;   "M-o"   #'ido-prev-work-file
-  ;;   "C-M-o" #'ido-next-work-file
-  ;;   "M-p"   #'ido-prev-work-directory
-  ;;   "M-s"   #'ido-merge-work-directories
-
-  ;;   :doc "Keymap for Ido file commands."
-  ;;   :parent ido-file-dir-completion-map
-  ;;   "C-o" #'ido-copy-current-word
-  ;;   "C-w" #'ido-copy-current-file-name
-  ;;   "M-l" #'ido-toggle-literal
-
-  ;;   :doc "Keymap for Ido buffer commands."
-  ;;   :parent ido-common-completion-map
-  ;;   "C-x C-f" #'ido-enter-find-file
-  ;;   "C-x C-b" #'ido-fallback-command
-  ;;   "C-k"     #'ido-kill-buffer-at-head
-  ;;   "C-S-b"   #'ido-bury-buffer-at-head
-  ;;   "C-o"     #'ido-toggle-virtual-buffers
-
-  :bind (
-         ;; Find Files
-         ("C-x C-f"   . ido-find-file)
-         ("C-x C-v"   . ido-find-alternate-file)
-         ("C-x 4 C-v" . ido-find-alternate-file-other-window)
-
-         ;; Find Buffers
-         ("C-x b" . ido-switch-buffer)
-
-         ;; Find Directories
-         ("C-x d" . ido-dired)
-
-         ;; Display Buffer (No selection)
-         ("C-x 4 C-o" . ido-display-buffer))
-  :custom
-  (ido-enable-flex-matching t)
-  (ido-all-frames nil)
-  (ido-buffer-disable-smart-matches nil)
-  (ido-use-filename-at-point 'guess)
-  (ido-use-url-at-point 'guess)
-  (ido-virtual-buffers t)
-  (ido-use-virtual-buffers 'auto)
-  (ido-max-window-height 1)
-  (ido-use-faces t)
-  :config
-  (ido-mode +1)
-  (ido-everywhere +1))
-
-(use-package ido-completing-read+
-  :config
-  (ido-ubiquitous-mode +1))
-
-(use-package ido-at-point
-  ;; Use C-M-i
-  :config
-  (ido-at-point-mode +1))
-
-(use-package crm-custom
-  :config
-  (crm-custom-mode +1))
-
-(use-package amx
-  :config
-  (amx-mode +1))
-
-(use-feature ibuffer
+(use-package ibuffer
   :bind (("C-x C-b" . ibuffer))
   :hook (ibuffer-mode . ibuffer-auto-mode)
   :custom
   (ibuffer-expert t))
 
-;; NEW
-
-(use-feature find-func
+(use-package find-func
   :custom
   (find-library-include-other-files nil))
 
-(use-feature which-func
+(use-package which-func
   :config
   (which-function-mode +1))
 
-(use-feature subword
-  :diminish (subword-mode)
-  :hook ((ruby-mode
-          ruby-ts-mode
-          python-mode
-          python-ts-mode) . subword-mode))
+(use-package imenu
+  :bind ("M-s i" . imenu)
+  :custom
+  (imenu-use-markers t)
+  (imenu-auto-rescan t)
+  (imenu-max-item-length 100)
+  (imenu-use-popup-menu nil)
+  (imenu-eager-completion-buffer t)
+  (imenu-space-replacement " ")
+  (imenu-level-separator "/"))
 
-;; Buffer Completion
+(use-package compile
+  :defer t
+  :hook (compilation-filter . ansi-color-compilation-filter)
+  :config
+  (setq compilation-always-kill t
+        compilation-ask-about-save nil
+        compilation-scroll-output 'first-error)
+  (global-set-key [(f9)] 'compile))
+
+(use-package project
+  :custom (project-mode-line t))
+
+(use-package eglot
+  :bind (:map
+	 eglot-mode-map
+	 ("C-c c a" . eglot-code-actions)
+	 ("C-c c o" . eglot-code-actions-organize-imports)
+	 ("C-c c r" . eglot-rename)
+	 ("C-c c f" . eglot-format)
+	 ("C-c h" . eldoc))
+  :custom
+  (eglot-sync-connect nil)
+  (eglot-events-buffer-config 0)
+  (eglot-report-progress nil)
+  (eglot-send-changes-idle-time 0.1)
+  (eglot-extend-to-xref t)
+  :config
+  (fset #'jsonrpc--log-event #'ignore))
+
+(use-package eldoc
+  :hook (ielm-mode . eldoc-mode)
+  :custom
+  (eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
+  (eldoc-echo-area-prefer-doc-buffer t))
+
+(use-package executable
+  :hook (after-save . executable-make-buffer-file-executable-if-script-p))
+
+(use-package vc-hooks
+  :custom
+  (vc-follow-symlinks t "Visit real file when editing a symlink no prompting."))
+
+(use-package ediff
+  :hook (ediff-quit . winner-undo)
+  :custom
+  (ediff-window-setup-function #'ediff-setup-windows-plain)
+  (ediff-split-window-function #'split-window-horizontally))
+
+(use-package tramp
+  :custom
+  (tramp-inline-compress-start-size 1000000)
+  (tramp-default-method "ssh"))
+
+;;; Packages
+
+(use-package modus-themes
+  :ensure t
+  :custom
+  (modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi-tinted))
+  (modus-themes-italic-constructs t)
+  (modus-themes-bold-constructs t)
+  (modus-themes-prompts '(italic bold))
+  (modus-themes-variable-pitch-ui nil)
+  (modus-themes-disable-other-themes t)
+  (modus-themes-mixed-fonts t)
+  (modus-themes-org-blocks 'gray-background)
+  (modus-themes-completions '((matches . (extrabold))
+  			      (selection . (semibold italic text-also))))
+  (modus-themes-headings '((1 . (variable-pitch 1.5))
+			   (2 . (1.3))
+			   (agenda-date . (1.3))
+			   (agenda-structure . (variable-pitch light 1.8))
+			   (t . (1.1))))
+  :config
+  (define-key global-map (kbd "<f5>") #'modus-themes-toggle)
+  (modus-themes-load-theme 'modus-vivendi-tinted))
+
+(use-package crux
+  :ensure t
+  :bind (([remap move-beginning-of-line] . crux-move-beginning-of-line)
+	 ("S-RET" . crux-smart-open-line)
+	 ("C-S-RET" . crux-smart-open-line-above)
+	 ("C-c o" . crux-open-with)
+	 ("C-c r" . crux-rename-file-and-buffer)
+	 ("C-c TAB" . crux-indent-rigidly-and-copy-to-clipboard)
+	 ("C-c k" . crux-kill-other-buffers)
+	 ("C-c d" . crux-duplicate-current-line-or-region)
+	 ("C-x 4 t" . crux-transpose-windows)
+	 ("C-c M-d" . crux-duplicate-and-comment-current-line-or-region)
+	 ("M-o" . crux-other-window-or-switch-buffer)
+	 ([(shift return)] . crux-smart-open-line)
+	 ("C-<backspace>" . crux-kill-line-backwards)
+	 ([remap kill-whole-line] . crux-kill-whole-line)
+	 ([remap keyboard-quit] . crux-keyboard-quit-dwim))
+  :config
+  (crux-reopen-as-root-mode))
+
+(use-package vertico
+  :ensure t
+  :hook (after-init . vertico-mode)
+  :custom
+  (vertico-resize t)
+  (vertico-count 20)
+  :config
+  (keymap-set vertico-map "?" #'minibuffer-completion-help)
+  (keymap-set vertico-map "M-RET" #'minibuffer-force-complete-and-exit)
+  (keymap-set vertico-map "M-TAB" #'minibuffer-complete))
+
+(use-package vertico-directory
+  :after vertico
+  :bind (:map vertico-map
+              ("RET" . vertico-directory-enter)
+              ("DEL" . vertico-directory-delete-char)
+              ("M-DEL" . vertico-directory-delete-word))
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
+(use-package marginalia
+  :ensure t
+  :hook (after-init . marginalia-mode))
+
+(use-package orderless
+  :ensure t
+  :config
+  (setq completion-styles '(orderless basic))
+  (setq completion-category-defaults nil)
+  (setq completion-category-overrides nil))
+
+(use-package consult
+  :ensure t
+  :bind (;; C-c bindings in `mode-specific-map'
+         ("C-c M-x" . consult-mode-command)
+         ("C-c h" . consult-history)
+         ("C-c k" . consult-kmacro)
+         ("C-c m" . consult-man)
+         ("C-c i" . consult-info)
+         ([remap Info-search] . consult-info)
+         ;; C-x bindings in `ctl-x-map'
+         ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
+         ("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
+         ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
+         ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
+         ("C-x t b" . consult-buffer-other-tab)    ;; orig. switch-to-buffer-other-tab
+         ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
+         ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
+         ;; Custom M-# bindings for fast register access
+         ("M-#" . consult-register-load)
+         ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
+         ("C-M-#" . consult-register)
+         ;; Other custom bindings
+         ("M-y" . consult-yank-pop)                ;; orig. yank-pop
+         ;; M-g bindings in `goto-map'
+         ("M-g e" . consult-compile-error)
+         ("M-g r" . consult-grep-match)
+         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+         ("M-g g" . consult-goto-line)             ;; orig. goto-line
+         ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
+         ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
+         ("M-g m" . consult-mark)
+         ("M-g k" . consult-global-mark)
+         ("M-g i" . consult-imenu)
+         ("M-g I" . consult-imenu-multi)
+         ;; M-s bindings in `search-map'
+         ("M-s d" . consult-find)                  ;; Alternative: consult-fd
+         ("M-s c" . consult-locate)
+         ("M-s g" . consult-grep)
+         ("M-s G" . consult-git-grep)
+         ;; ("M-s r" . consult-ripgrep)
+         ("M-s l" . consult-line)
+         ("M-s L" . consult-line-multi)
+         ("M-s k" . consult-keep-lines)
+         ("M-s u" . consult-focus-lines)
+         ;; Isearch integration
+         ("M-s e" . consult-isearch-history)
+         :map isearch-mode-map
+         ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
+         ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
+         ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
+         ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
+         ;; Minibuffer history
+         :map minibuffer-local-map
+         ("M-s" . consult-history)                 ;; orig. next-matching-history-element
+         ("M-r" . consult-history))                ;; orig. previous-matching-history-element
+  :init
+  (advice-add #'register-preview :override #'consult-register-window)
+  (setq register-preview-delay 0.5)
+  (setq xref-show-xrefs-function #'consult-xref
+        xref-show-definitions-function #'consult-xref)
+  :config
+  (setq consult-preview-key "M-."
+	consult-narrow-key "<")
+  (keymap-set consult-narrow-map (concat consult-narrow-key " ?") #'consult-narrow-help)
+  (consult-customize
+   consult-theme :preview-key '(:debounce 0.2 any)
+   consult-ripgrep consult-git-grep consult-grep consult-man
+   consult-bookmark consult-recent-file consult-xref
+   consult--source-bookmark consult--source-file-register
+   consult--source-recent-file consult--source-project-recent-file
+   ;; :preview-key "M-."
+   :preview-key '(:debounce 0.4 any)))
+
+(use-package embark
+  :ensure t
+  :bind
+  (("C-." . embark-act)         ;; pick some comfortable binding
+   ("C-;" . embark-dwim)        ;; good alternative: M-.
+   ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+  :init
+  (setq prefix-help-command #'embark-prefix-help-command)
+  (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+  (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
+  (context-menu-mode 1)
+  (add-hook 'context-menu-functions #'embark-context-menu 100)
+  :config
+  (add-to-list 'display-buffer-alist
+               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                 nil
+                 (window-parameters (mode-line-format . none)))))
+
+(use-package embark-consult
+  :ensure t
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+
+(when (> emacs-major-version 29)
+  (use-package completion-preview
+    :hook ((shell-mode . completion-preview-mode)
+	   (eshell-mode . completion-preview-mode)
+	   (eat-mode . completion-preview-mode))))
 
 (use-package corfu
-  :bind
-  (:map corfu-map
-        ("C-n" . corfu-next)
-        ("C-p" . corfu-previous))
+  :ensure t
+  :hook (after-init . global-corfu-mode)
+  :bind (:map corfu-map
+              ("TAB" . corfu-next)
+              ([tab] . corfu-next)
+              ("S-TAB" . corfu-previous)
+              ([backtab] . corfu-previous)
+              ("RET" . nil)
+              ("M-RET" . corfu-insert)
+              ("M-." . corfu-show-location)
+              ("M-h" . nil)
+              ([remap next-line] . nil)
+              ([remap previous-line] . nil)
+              ("M-." . corfu-info-location)
+	      ([remap corfu-info-documentation] . corfu-popupinfo-toggle)
+	      ("'" . corfu-quick-complete))
+  :custom
+  (corfu-auto-prefix 4)
+  (corfu-auto-delay 0.07)
+  (corfu-count 8)
+  (corfu-auto  t)
+  (corfu-cycle t)
+  (corfu-min-width 20)
+  (corfu-preview-current nil)
+  (corfu-quit-no-match 'separator)
+  (corfu-preselect 'prompt)
+  (corfu-scroll-margin 5)
+  (corfu-popupinfo-delay '(1.25 . 0.5))
+  (corfu-quick1 "asdfghjkl;")
   :config
-  (global-corfu-mode +1))
+  (corfu-popupinfo-mode 1)
+  (with-eval-after-load 'savehist
+    (corfu-history-mode 1)
+    (add-to-list 'savehist-additional-variables 'corfu-history)))
+
+(use-package kind-icon
+  :ensure t
+  :after corfu
+  :config
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
 (use-package cape
-  :config
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-file))
-
-;; TODO
-;; (use-package yasnippet
-;;   :config
-;;   (yas-global-mode +1))
-
-;; (use-package yasnippet-snippets)
-
-;;; Git
-(use-package magit
-  :custom
-  (magit-bury-buffer-function #'quit-window)
-  (magit-diff-refine-hunk t)
-  :bind (([(meta f12)] . magit-status)
-         ("C-x g"      . magit-status)
-         ("C-x M-g"    . magit-dispatch)
-         :map magit-status-mode-map
-         ("C-M-<up>"   . magit-section-up))
-  :config
-  (transient-bind-q-to-quit))
-
-(use-package magit-todos)
-
-(use-package git-modes
-  :config
-  (add-to-list 'auto-mode-alist
-               (cons "/.dockerignore\\'" 'gitignore-mode)))
-
-(use-package git-timemachine)
-
-(use-package gitignore-templates
-  :custom
-  (gitignore-templates-api 'github))
-
-
-;;; Org
-(use-package org
-  :custom
-  (org-clock-persist 'history)
-  :config
-  (org-clock-persistence-insinuate))
-
-(use-package org-pomodoro)
-
-
-
-;;; Programming Tools
-
-;; Documentation
-(use-feature eldoc
-  :custom
-  (eldoc-idle-delay 0.2)
-  :config
-  (global-eldoc-mode +1))
-
-;; (use-package devdocs)
-
-;; Linting
-(use-feature flyspell
-  :custom
-  (ispell-program-name "aspell")
-  (ispell-extra-args '("--sug-mode=ultra"))
-  :hook ((text-mode org-mode) . flyspell-mode))
-
-;; LSP
-(use-package eglot
-  :custom
-  (eglot-autoshutdown t)
-  (eglot-events-buffer-size 0)
-  (eglot-ignored-server-capabilities
-   '(:hoverProvider :documentHighlightProvider))
-  :config
-  (with-eval-after-load 'eglot
-    (advice-add 'jsonrpc--log-event :override #'ignore)
-    (setq-default eglot-workspace-configuration
-                  '((:gopls .
-                            ((staticcheck . t)
-                             (matcher . "CaseSensitive")))))
-    (add-to-list 'eglot-server-programs
-                 '(coffee-mode . ("coffeesense-language-server" "--stdio")))
-    (add-to-list 'eglot-server-programs
-                 '((c-mode c++-mode) . ("clangd-mp-18"
-                                        "-j=8"
-                                        "--clang-tidy"
-                                        "--background-index"
-                                        "--pch-storage=memory")))))
-
-;; Debugger
-(use-feature gdb-mi
-  :custom
-  (gdb-many-windows t)
-  (gdb-show-main t))
-
-;; Command to start RDBG: rdbg command-cwd "/home/macpapo/Code/Ruby/Rails/prova/" -c "bin/rails s --port 3000"
-(use-package dape
-  :hook ((kill-emacs . dape-breakpoint-save)  ; Save breakpoint on quit
-         (after-init . dape-breakpoint-load)) ; Load breakpoint on startup
+  :ensure t
+  ;; Bind prefix keymap providing all Cape commands under a mnemonic key.
+  ;; Press C-c p ? to for help.
+  :bind ("C-c p" . cape-prefix-map) ;; Alternative key: M-<tab>, M-p, M-+
+  ;; Alternatively bind Cape commands individually.
+  ;; :bind (("C-c p d" . cape-dabbrev)
+  ;;        ("C-c p h" . cape-history)
+  ;;        ("C-c p f" . cape-file)
+  ;;        ...)
   :init
-  (setq dape-buffer-window-arrangement 'gud)
-  :config
-  (dape-breakpoint-global-mode)         ; Global bindings for setting breakpoints with mouse
-
-  ;; To not display info and/or buffers on startup
-  (remove-hook 'dape-on-start-hooks 'dape-info)
-  (remove-hook 'dape-on-start-hooks 'dape-repl)
-
-  ;; To display info and/or repl buffers on stopped
-  (add-hook 'dape-on-stopped-hooks 'dape-info)
-  (add-hook 'dape-on-stopped-hooks 'dape-repl)
-
-  ;; Kill compile buffer on build success
-  (add-hook 'dape-compile-compile-hooks 'kill-buffer)
-
-  ;; Save buffers on startup, useful for interpreted languages
-  (add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t))))
-
-;; Tools
-(use-package dotenv-mode
-  :mode ("\\.env\\..*\\'" . dotenv-mode))
-
-(use-package ssh-config-mode)
-
-;; TODO
-;; (use-package editorconfig
-;;   :diminish (editorconfig-mode)
-;;   :config
-;;   (editorconfig-mode +1))
-
-;; (use-package editorconfig-generate)
-
-;; (use-package dtrt-indent
-;;   :after (editorconfig)
-;;   :config
-;;   (add-hook
-;;    'editorconfig-after-apply-functions
-;;    (lambda (props)
-;;      "Adjust indentation if `editorconfig' hasn't changed it"
-;;      (unless (and (gethash 'indent_style props)
-;;                (gethash 'indent_size props))
-;;        (message "No EditorConfig properties found, falling back to dtrt-indent")
-;;        (dtrt-indent-mode 1)))))
-
-(use-package rainbow-delimiters
-  :hook (prog-mode))
-
-(use-package symbol-overlay
-  :diminish (symbol-overlay-mode)
-  :bind (:map symbol-overlay-mode-map
-              ("M-i" . symbol-overlay-put)
-              ("M-I" . symbol-overlay-remove-all)
-              ("M-n" . symbol-overlay-jump-next)
-              ("M-p" . symbol-overlay-jump-prev))
-  :hook ((prog-mode conf-mode) . symbol-overlay-mode))
-
-(use-package highlight-numbers
-  :hook (prog-mode))
-
-(use-package highlight-escape-sequences
-  :hook (prog-mode . hes-mode))
-
-(use-package lorem-ipsum)
-
-
-;; Languages
-
-;; (use-feature treesit
-;;   ;; Experiment (C-TS-MODE, JAVA-TS-MODE crash)
-;;   :config
-;;   (setq treesit-language-source-alist
-;;         '((bash       . ("https://github.com/tree-sitter/tree-sitter-bash"))
-;;           (cmake      . ("https://github.com/uyha/tree-sitter-cmake"))
-;;           (make       . ("https://github.com/alemuller/tree-sitter-make"))
-;;           (c          . ("https://github.com/tree-sitter/tree-sitter-c"))
-;;           (cpp        . ("https://github.com/tree-sitter/tree-sitter-cpp"))
-;;           (css        . ("https://github.com/tree-sitter/tree-sitter-css"))
-;;           (scss       . ("https://github.com/serenadeai/tree-sitter-scss"))
-;;           (elisp      . ("https://github.com/Wilfred/tree-sitter-elisp"))
-;;           (go         . ("https://github.com/tree-sitter/tree-sitter-go"))
-;;           (html       . ("https://github.com/tree-sitter/tree-sitter-html"))
-;;           (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript"))
-;;           (java       . ("https://github.com/tree-sitter/tree-sitter-java"))
-;;           (json       . ("https://github.com/tree-sitter/tree-sitter-json"))
-;;           (markdown   . ("https://github.com/ikatyang/tree-sitter-markdown"))
-;;           (ruby       . ("https://github.com/tree-sitter/tree-sitter-ruby"))
-;;           (python     . ("https://github.com/tree-sitter/tree-sitter-python"))
-;;           (yaml       . ("https://github.com/ikatyang/tree-sitter-yaml")))))
-
-;; YAML
-(use-package yaml-mode)
-
-;; DATA
-(use-package csv-mode
-  :custom
-  (csv-separators '("," ";" "|" " "))
-  :hook (csv-mode . csv-guess-set-separator))
-
-;; DOCKER
-(use-package dockerfile-mode)
-
-;; Markdown
-(use-package markdown-mode
-  :commands (markdown-mode gfm-mode)
-  :mode
-  (("README\\.md\\'" . gfm-mode)
-   ("\\.md\\'" . markdown-mode)
-   ("\\.markdown\\'" . markdown-mode))
-  ;; :custom
-  ;; (markdown-command "/usr/bin/pandoc")
+  ;; Add to the global default value of `completion-at-point-functions' which is
+  ;; used by `completion-at-point'.  The order of the functions matters, the
+  ;; first function returning a result wins.  Note that the list of buffer-local
+  ;; completion functions takes precedence over the global list.
+  (add-hook 'completion-at-point-functions #'cape-dabbrev)
+  (add-hook 'completion-at-point-functions #'cape-file)
+  (add-hook 'completion-at-point-functions #'cape-elisp-block)
+  ;; (add-hook 'completion-at-point-functions #'cape-history)
+  ;; ...
   )
 
-;; NGINX
-(use-package nginx-mode)
-
-;; RUBY
-(use-package rvm
+(use-package wgrep
+  :ensure t
   :config
-  (rvm-use-default))
+  (setq wgrep-auto-save-buffer t))
 
-(use-package inf-ruby
-  :hook ((ruby-mode ruby-ts-mode) . inf-ruby-minor-mode))
-
-(use-package robe
-  :diminish (robe-mode)
-  :hook ((ruby-mode ruby-ts-mode) . robe-mode))
-
-(use-package ruby-end
-  :diminish (ruby-end-mode))
-
-(use-package rspec-mode
-  :diminish (rspec-mode)
-  :hook ((ruby-mode ruby-ts-mode) . rspec-mode))
-
-(use-package rake)
-
-(use-package yari)
-
-(use-package bundler)
-
-(use-package rubocop
-  :diminish (rubocop-mode)
-  :hook ((ruby-mode ruby-ts-mode) . rubocop-mode))
-
-;; LISP
-(use-package slime
-  :hook (lisp-mode)
+(use-package eat
+  :ensure t
   :custom
-  (slime-lisp-implementations
-   '((ccl ("ccl"))
-     (clisp ("clisp" "-q"))
-     (cmucl ("cmucl" "-quiet"))
-     (sbcl ("sbcl" "--noinform") :coding-system utf-8-unix)))
-  (inferior-lisp-program "/usr/local/bin/sbcl")
-  (slime-complete-symbol-function 'slime-fuzzy-complete-symbol)
-  (slime-fuzzy-completion-in-place t)
-  (slime-enable-evaluate-in-emacs t)
-  (slime-autodoc-use-multiline-p t)
+  (eat-term-name "xterm")
   :config
-  ;; the SBCL configuration file is in Common Lisp
-  (add-to-list 'auto-mode-alist '("\\.sbclrc\\'" . lisp-mode))
+  (eat-eshell-mode)                     ; use Eat to handle term codes in program output
+  (eat-eshell-visual-command-mode))     ; commands like less will be handled by Eat
 
-  ;; Open files with .cl extension in lisp-mode
-  (add-to-list 'auto-mode-alist '("\\.cl\\'" . lisp-mode))
-  (slime-setup '(slime-fancy)))
+(use-package tempel
+  :ensure t
+  ;; By default, tempel looks at the file "templates" in
+  ;; user-emacs-directory, but you can customize that with the
+  ;; tempel-path variable:
+  ;; :custom
+  ;; (tempel-path (concat user-emacs-directory "custom_template_file"))
+  :bind (("M-*" . tempel-insert)
+         ("M-+" . tempel-complete)
+         :map tempel-map
+         ("C-c RET" . tempel-done)
+         ("C-<down>" . tempel-next)
+         ("C-<up>" . tempel-previous)
+         ("M-<down>" . tempel-next)
+         ("M-<up>" . tempel-previous))
+  :init
+  ;; Make a function that adds the tempel expansion function to the
+  ;; list of completion-at-point-functions (capf).
+  (defun tempel-setup-capf ()
+    (add-hook 'completion-at-point-functions #'tempel-expand -1 'local))
+  ;; Put tempel-expand on the list whenever you start programming or
+  ;; writing prose.
+  (add-hook 'prog-mode-hook 'tempel-setup-capf)
+  (add-hook 'text-mode-hook 'tempel-setup-capf))
 
-(use-package elisp-slime-nav
-  :diminish (elisp-slime-nav-mode)
-  :hook ((emacs-lisp-mode ielm-mode) . elisp-slime-nav-mode))
+(use-package tempel-collection
+  :ensure t
+  :after tempel)
 
-(use-package macrostep
-  :bind (:map emacs-lisp-mode-map
-              ("M-RET" . macrostep-expand)))
+(use-package mise
+  :ensure t
+  :hook (after-init . global-mise-mode))
 
-(use-package highlight-quoted
-  :hook (emacs-lisp-mode))
+(use-package magit
+  :ensure t
+  :bind (("C-x g" . magit-status)))
 
-(use-package paredit
-  ;; Paredit Cheat Sheet
-
-  ;; Navigation
-  ;; Go to the opening parenthesis: M-C-u (paredit-backward-up)
-  ;; Go to the closing parenthesis: M-C-d (paredit-forward-down)
-
-  ;; Parentheses and Quotes Manipulation
-  ;; Insert balanced parentheses: M-( (paredit-wrap-round)
-  ;; Slurp a parenthesis forward: C-) (paredit-forward-slurp-sexp)
-  ;; Slurp a parenthesis backward: C-( (paredit-backward-slurp-sexp)
-  ;; Barf a parenthesis forward: C-} (paredit-forward-barf-sexp)
-  ;; Barf a parenthesis backward: C-{ (paredit-backward-barf-sexp)
-  ;; Surround with quotes: M-\" (paredit-meta-doublequote)
-
-  ;; Deletion and Killing
-  ;; Delete a character forward: C-d (paredit-forward-delete)
-  ;; Delete a character backward: DEL (paredit-backward-delete)
-  ;; Kill a line (keeping parentheses balanced): C-k (paredit-kill)
-
-  ;; Splitting and Joining
-  ;; Split an s-expression: M-S (paredit-split-sexp)
-  ;; Join two s-expressions: M-J (paredit-join-sexps)
-  :diminish (paredit-mode)
-  :hook ((emacs-lisp-mode
-          lisp-mode
-          lisp-interaction-mode) . enable-paredit-mode))
-
-;; WEB
-(use-package php-mode)
-
-(use-package web-mode
-  :mode (("\\.phtml\\'" . web-mode)
-         ("\\.tpl\\.php\\'" . web-mode)
-         ("\\.[agj]sp\\'" . web-mode)
-         ("\\.as[cp]x\\'" . web-mode)
-         ("\\.erb\\'" . web-mode)
-         ("\\.mustache\\'" . web-mode)
-         ("\\.djhtml\\'" . web-mode)))
-
-(use-package emmet-mode
-  :hook ((web-mode css-mode) . emmet-mode))
-
-(use-package coffee-mode
-  :custom
-  (coffee-tab-width 2)
-  :config
-  (add-to-list 'coffee-args-compile "--no-header"))
-
-(use-feature css-mode
-  :custom
-  (css-indent-offset 2))
-
-(use-package sass-mode)
-
-(use-package scss-mode)
-
-;; SQL
-(use-package sqlup-mode
-  :hook ((sql-mode sql-interactive-mode) . sqlup-mode))
-
-;; JAVA
-(use-feature glasses
-  :hook (java-mode . glasses-mode))
-
-;; C/C++
-(use-feature cwarn
-  :hook ((c-mode c++-mode) . cwarn-mode))
-
-(use-package disaster)
-
-(use-package cmake-mode)
-
-(use-package modern-cpp-font-lock
-  :hook (c++-mode . modern-c++-font-lock-mode))
-
-;; DART
-(use-package dart-mode
-  :mode "\\.dart\\'"
-  :bind (:map dart-mode-map
-              ("C-c C-o" . dart-server-format)
-              ("C-M-x"   . flutter-run-or-hot-reload)))
-
-(use-package dart-server
-  :hook (dart-server . flycheck-mode))
-
-(use-package flutter
-  :custom
-  (flutter-sdk-path "~/FlutterDev/flutter/"))
-
-;; GO
-(use-package go-mode
-  :mode ("\\.go\\'" . go-mode))
-
-
-;;; MISC
-
-(use-package neotree
-  :bind ([f8] . neotree-toggle))
-
-(use-package mermaid-mode)
-
-(use-feature gnus
-  :bind (:map gnus-group-mode-map
-              ("o" . my-gnus-group-list-subscribed-groups))
-  :hook ((message-mode . (lambda ()
-                           (flyspell-mode t))))
-  :config
-  (setq gnus-article-sort-functions
-        '((not gnus-article-sort-by-date)
-          (not gnus-article-sort-by-number))
-        ;; Patch article
-        gnus-article-patch-conditions
-        '( "^@@ -[0-9]+,[0-9]+ \\+[0-9]+,[0-9]+ @@" )
-        ;; Specify the send mail function
-        send-mail-function         'smtpmail-send-it
-        message-send-mail-function 'smtpmail-send-it)
-
-  (defun my-gnus-group-list-subscribed-groups ()
-    "List all subscribed groups with or without un-read messages"
-    (interactive)
-    (gnus-group-list-all-groups 5)))
+(require 'data-langs)
+(require 'c-cpp-lang)
+(require 'web-lang)
+(require 'ruby-lang)
 
 (provide 'init)
+
 ;;; init.el ends here
