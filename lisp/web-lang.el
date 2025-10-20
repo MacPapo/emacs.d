@@ -35,6 +35,15 @@
                 ("beg" "end")))
      )))
 
+(use-package eglot
+  :ensure t
+  :pin gnu
+  :config
+  (add-to-list 'eglot-server-programs
+	       '((web-mode :language-id "erb") . ("lspx"
+						  "--lsp" "herb-language-server --stdio"
+						  "--lsp" "stimulus-language-server --stdio"))))
+
 (provide 'web-lang)
 
 ;;; web-lang.el ends here

@@ -29,6 +29,8 @@
   :hook (c++-mode . modern-c++-font-lock-mode))
 
 (use-package eglot
+  :ensure t
+  :pin gnu
   :hook ((c-mode c++-mode) . eglot-ensure)
   :config
   (add-to-list 'eglot-server-programs

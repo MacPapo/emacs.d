@@ -31,6 +31,7 @@
   (setopt custom-file (locate-user-emacs-file "custom.el"))
   (load custom-file :no-error-if-file-is-missing)
   :custom
+  (mode-line-compact t)
   (save-interprogram-paste-before-kill t)
   (tab-always-indent 'complete)
   (text-mode-ispell-word-completion nil)
@@ -115,6 +116,8 @@
     (let ((gls (executable-find "gls")))
       (when gls (progn
 		  (setq insert-directory-program gls))))))
+
+(use-package diminish :ensure t)
 
 ;;; Built-in
 
@@ -208,6 +211,7 @@
   :hook (after-init . global-so-long-mode))
 
 (use-package which-key
+  :diminish which-key-mode
   :hook (after-init . which-key-mode))
 
 (use-package isearch
@@ -274,24 +278,8 @@
 (use-package project
   :custom (project-mode-line t))
 
-(use-package eglot
-  :bind (:map
-	 eglot-mode-map
-	 ("C-c c a" . eglot-code-actions)
-	 ("C-c c o" . eglot-code-actions-organize-imports)
-	 ("C-c c r" . eglot-rename)
-	 ("C-c c f" . eglot-format)
-	 ("C-c h" . eldoc))
-  :custom
-  (eglot-sync-connect nil)
-  (eglot-events-buffer-config 0)
-  (eglot-report-progress nil)
-  (eglot-send-changes-idle-time 0.1)
-  (eglot-extend-to-xref t)
-  :config
-  (fset #'jsonrpc--log-event #'ignore))
-
 (use-package eldoc
+  :diminish eldoc-mode
   :hook (ielm-mode . eldoc-mode)
   :custom
   (eldoc-documentation-strategy 'eldoc-documentation-compose-eagerly)
@@ -314,6 +302,13 @@
   :custom
   (tramp-inline-compress-start-size 1000000)
   (tramp-default-method "ssh"))
+
+(use-package flymake
+  :custom
+  (flymake-mode-line-lighter "f"))
+
+(use-package completion-preview
+  :hook ((shell-mode eshell-mode eat-mode) . completion-preview-mode))
 
 ;;; Packages
 
@@ -359,12 +354,17 @@
   :config
   (crux-reopen-as-root-mode))
 
+(use-package avy
+  :ensure t
+  :bind (("C-c j" . avy-goto-line)
+	 ("C-'" . avy-goto-char-timer)))
+
 (use-package vertico
   :ensure t
   :hook (after-init . vertico-mode)
   :custom
-  (vertico-resize t)
-  (vertico-count 20)
+  (vertico-resize nil)
+  (vertico-count 12)
   :config
   (keymap-set vertico-map "?" #'minibuffer-completion-help)
   (keymap-set vertico-map "M-RET" #'minibuffer-force-complete-and-exit)
@@ -384,10 +384,10 @@
 
 (use-package orderless
   :ensure t
-  :config
-  (setq completion-styles '(orderless basic))
-  (setq completion-category-defaults nil)
-  (setq completion-category-overrides nil))
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides nil))
 
 (use-package consult
   :ensure t
@@ -485,12 +485,6 @@
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
-(when (> emacs-major-version 29)
-  (use-package completion-preview
-    :hook ((shell-mode . completion-preview-mode)
-	   (eshell-mode . completion-preview-mode)
-	   (eat-mode . completion-preview-mode))))
-
 (use-package corfu
   :ensure t
   :hook (after-init . global-corfu-mode)
@@ -501,6 +495,7 @@
               ([backtab] . corfu-previous)
               ("RET" . nil)
               ("M-RET" . corfu-insert)
+	      ("M-SPC" . corfu-insert-separator)
               ("M-." . corfu-show-location)
               ("M-h" . nil)
               ([remap next-line] . nil)
@@ -509,18 +504,19 @@
 	      ([remap corfu-info-documentation] . corfu-popupinfo-toggle)
 	      ("'" . corfu-quick-complete))
   :custom
-  (corfu-auto-prefix 4)
+  (corfu-auto-prefix 2)
   (corfu-auto-delay 0.07)
   (corfu-count 8)
   (corfu-auto  t)
   (corfu-cycle t)
   (corfu-min-width 20)
-  (corfu-preview-current nil)
+  (corfu-preview-current 'insert)
   (corfu-quit-no-match 'separator)
   (corfu-preselect 'prompt)
   (corfu-scroll-margin 5)
   (corfu-popupinfo-delay '(1.25 . 0.5))
   (corfu-quick1 "asdfghjkl;")
+  (global-corfu-modes '(not shell-mode eshell-mode eat-mode))
   :config
   (corfu-popupinfo-mode 1)
   (with-eval-after-load 'savehist
@@ -535,25 +531,11 @@
 
 (use-package cape
   :ensure t
-  ;; Bind prefix keymap providing all Cape commands under a mnemonic key.
-  ;; Press C-c p ? to for help.
-  :bind ("C-c p" . cape-prefix-map) ;; Alternative key: M-<tab>, M-p, M-+
-  ;; Alternatively bind Cape commands individually.
-  ;; :bind (("C-c p d" . cape-dabbrev)
-  ;;        ("C-c p h" . cape-history)
-  ;;        ("C-c p f" . cape-file)
-  ;;        ...)
+  :bind ("C-c p" . cape-prefix-map)
   :init
-  ;; Add to the global default value of `completion-at-point-functions' which is
-  ;; used by `completion-at-point'.  The order of the functions matters, the
-  ;; first function returning a result wins.  Note that the list of buffer-local
-  ;; completion functions takes precedence over the global list.
   (add-hook 'completion-at-point-functions #'cape-dabbrev)
   (add-hook 'completion-at-point-functions #'cape-file)
-  (add-hook 'completion-at-point-functions #'cape-elisp-block)
-  ;; (add-hook 'completion-at-point-functions #'cape-history)
-  ;; ...
-  )
+  (add-hook 'completion-at-point-functions #'cape-elisp-block))
 
 (use-package wgrep
   :ensure t
@@ -565,16 +547,30 @@
   :custom
   (eat-term-name "xterm")
   :config
-  (eat-eshell-mode)                     ; use Eat to handle term codes in program output
-  (eat-eshell-visual-command-mode))     ; commands like less will be handled by Eat
+  (eat-eshell-mode)
+  (eat-eshell-visual-command-mode))
+
+(use-package eglot
+  :ensure t
+  :pin gnu
+  :bind (:map
+	 eglot-mode-map
+	 ("C-c c a" . eglot-code-actions)
+	 ("C-c c o" . eglot-code-actions-organize-imports)
+	 ("C-c c r" . eglot-rename)
+	 ("C-c c f" . eglot-format)
+	 ("C-c h" . eldoc))
+  :custom
+  (eglot-sync-connect nil)
+  (eglot-events-buffer-config 0)
+  (eglot-report-progress nil)
+  (eglot-send-changes-idle-time 0.1)
+  (eglot-extend-to-xref t)
+  :config
+  (fset #'jsonrpc--log-event #'ignore))
 
 (use-package tempel
   :ensure t
-  ;; By default, tempel looks at the file "templates" in
-  ;; user-emacs-directory, but you can customize that with the
-  ;; tempel-path variable:
-  ;; :custom
-  ;; (tempel-path (concat user-emacs-directory "custom_template_file"))
   :bind (("M-*" . tempel-insert)
          ("M-+" . tempel-complete)
          :map tempel-map
@@ -584,18 +580,18 @@
          ("M-<down>" . tempel-next)
          ("M-<up>" . tempel-previous))
   :init
-  ;; Make a function that adds the tempel expansion function to the
-  ;; list of completion-at-point-functions (capf).
   (defun tempel-setup-capf ()
     (add-hook 'completion-at-point-functions #'tempel-expand -1 'local))
-  ;; Put tempel-expand on the list whenever you start programming or
-  ;; writing prose.
   (add-hook 'prog-mode-hook 'tempel-setup-capf)
   (add-hook 'text-mode-hook 'tempel-setup-capf))
 
 (use-package tempel-collection
   :ensure t
   :after tempel)
+
+(use-package eglot-tempel
+  :ensure t
+  :hook (eglot-server-initialized . eglot-tempel-mode))
 
 (use-package mise
   :ensure t

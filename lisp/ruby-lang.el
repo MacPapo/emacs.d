@@ -11,11 +11,15 @@
 
 (use-package minitest
   :ensure t
-  :hook (ruby-mode . minitest-mode)
+  :diminish " mini"
+  :hook ((ruby-mode ruby-ts-mode) . minitest-mode)
   :custom
   (minitest-use-rails t))
 
 (use-package eglot
+  :ensure t
+  :pin gnu
+  :hook ((ruby-mode ruby-ts-mode) . eglot-ensure)
   :config
   (add-to-list 'eglot-server-programs
 	       '((ruby-mode ruby-ts-mode) "ruby-lsp")))
