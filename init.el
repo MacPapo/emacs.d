@@ -25,9 +25,10 @@
 
 (use-package emacs
   :init
-  (require 'package)
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
   (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+  (defvar site-lisp-dir (expand-file-name "site-lisp" user-emacs-directory)
+    "Directory containing manually installed Emacs Lisp packages.")
   (setopt custom-file (locate-user-emacs-file "custom.el"))
   (load custom-file :no-error-if-file-is-missing)
   :custom
@@ -73,11 +74,17 @@
   (auto-save-interval 2400)
   (auto-save-timeout 300)
   :config
-  (let ((mono-spaced-font "Monospace")
+  (let ((mono-spaced-font "Monospace")	; Set fonts
 	(proportionately-spaced-font "Sans"))
     (set-face-attribute 'default nil :family mono-spaced-font :height 100)
     (set-face-attribute 'fixed-pitch nil :family mono-spaced-font :height 1.0)
     (set-face-attribute 'variable-pitch nil :family proportionately-spaced-font :height 1.0))
+
+  (when (file-directory-p site-lisp-dir) ; Add site-lisp and subdirs to load-path
+    (add-to-list 'load-path site-lisp-dir)
+    (dolist (dir (directory-files site-lisp-dir t "^[^\\.]"))
+      (when (file-directory-p dir)
+	(add-to-list 'load-path dir))))
   (add-to-list 'save-some-buffers-action-alist
                (list "d"
                      (lambda (buffer) (diff-buffer-with-file (buffer-file-name buffer)))
@@ -92,21 +99,27 @@
 
 (use-package emacs
   :if (eq system-type 'darwin)
+  :custom
+  (ns-use-srgb-colorspace nil)
+  (ns-use-proxy-icon nil)
+  (mac-command-modifier 'meta)
+  (mac-option-modifier 'none)
+  (mac-function-modifier 'hyper)
   :config
-  (setopt mac-command-modifier 'meta)
-  (setopt mac-option-modifier 'none)
-  (setopt mac-function-modifier 'hyper)
-
-  (setopt ns-use-proxy-icon nil)
-
+  
+  (set-frame-parameter nil 'ns-transparent-titlebar t)
   (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
   (add-to-list 'default-frame-alist '(ns-appearance . dark))
-
+  
   (let ((mono-spaced-font "Go Mono")
 	(proportionately-spaced-font "Go"))
     (set-face-attribute 'default nil :family mono-spaced-font :height 130)
     (set-face-attribute 'fixed-pitch nil :family mono-spaced-font :height 1.0)
     (set-face-attribute 'variable-pitch nil :family proportionately-spaced-font :height 1.0))
+
+  (use-package menu-bar
+    :config
+    (menu-bar-mode +1))
 
   (use-package exec-path-from-shell
     :demand t
@@ -116,6 +129,9 @@
     (let ((gls (executable-find "gls")))
       (when gls (progn
 		  (setq insert-directory-program gls))))))
+
+(use-package system-packages :ensure t)
+(use-package system-packages-ext :after (use-package exec-path-from-shell))
 
 (use-package diminish :ensure t)
 
@@ -331,8 +347,20 @@
 			   (agenda-structure . (variable-pitch light 1.8))
 			   (t . (1.1))))
   :config
-  (define-key global-map (kbd "<f5>") #'modus-themes-toggle)
   (modus-themes-load-theme 'modus-vivendi-tinted))
+
+(use-package modus-themes
+  :ensure t
+  :if (eq system-type 'darwin)
+  :config
+  (defun mac/apply-theme (appearance)
+    "Load theme, taking current system APPEARANCE into consideration."
+    (mapc #'disable-theme custom-enabled-themes)
+    (pcase appearance
+      ('light (modus-themes-load-theme 'modus-operandi-tinted))
+      ('dark (modus-themes-load-theme 'modus-vivendi-tinted))))
+
+  (add-hook 'ns-system-appearance-change-functions #'mac/apply-theme))
 
 (use-package crux
   :ensure t
@@ -593,7 +621,9 @@
   :hook (eglot-server-initialized . eglot-tempel-mode))
 
 (use-package mise
+  :defer t
   :ensure t
+  :ensure-system-package mise
   :hook (after-init . global-mise-mode))
 
 (use-package magit
@@ -604,6 +634,7 @@
 (require 'c-cpp-lang)
 (require 'web-lang)
 (require 'ruby-lang)
+(require 'go-lang)
 
 (provide 'init)
 

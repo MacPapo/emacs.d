@@ -54,6 +54,8 @@
 (setopt process-adaptive-read-buffering nil)
 (setopt jit-lock-defer-time 0)
 
+(setq-default frame-title-format "")
+
 ;; Disable bidirectional text scanning for a modest performance boost.
 (setq-default bidi-display-reordering 'left-to-right
               bidi-paragraph-direction 'left-to-right)

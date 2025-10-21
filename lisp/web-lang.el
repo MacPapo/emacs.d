@@ -6,8 +6,17 @@
 
 ;;; Code:
 
+(use-package js
+  :defer t
+  :ensure-system-package
+  ((node :version "25") . "mise use -g node@25")
+  ((deno :version "2")  . "mise use -g deno@2")
+  (typescript-language-server . "npm install -g typescript-language-server typescript"))
+
 (use-package web-mode
+  :defer t
   :ensure t
+  :ensure-system-package (herb-language-server . "npm install -g herb-language-server")
   :mode
   (("\\.phtml\\'" . web-mode)
    ("\\.php\\'" . web-mode)
@@ -36,8 +45,11 @@
      )))
 
 (use-package eglot
+  :defer t
   :ensure t
+  :ensure-system-package (stimulus-language-server . "npm install -g stimulus-language-server")
   :pin gnu
+  :hook ((js-mode . eglot-ensure))
   :config
   (add-to-list 'eglot-server-programs
 	       '((web-mode :language-id "erb") . ("lspx"
