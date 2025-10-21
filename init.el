@@ -25,6 +25,7 @@
 
 (use-package emacs
   :init
+  (require 'package)
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
   (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
   (defvar site-lisp-dir (expand-file-name "site-lisp" user-emacs-directory)
