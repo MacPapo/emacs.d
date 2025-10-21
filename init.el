@@ -327,6 +327,9 @@
 (use-package completion-preview
   :hook ((shell-mode eshell-mode eat-mode) . completion-preview-mode))
 
+(use-package editorconfig
+  :hook (after-init . editorconfig-mode))
+
 ;;; Packages
 
 (use-package modus-themes

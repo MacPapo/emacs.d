@@ -44,17 +44,27 @@
                 ("beg" "end")))
      )))
 
+
 (use-package eglot
   :defer t
   :ensure t
   :ensure-system-package (stimulus-language-server . "npm install -g stimulus-language-server")
   :pin gnu
-  :hook ((js-mode . eglot-ensure))
+  :hook ((js-mode . eglot-ensure)
+	 (web-mode . eglot-ensure))
   :config
   (add-to-list 'eglot-server-programs
 	       '((web-mode :language-id "erb") . ("lspx"
 						  "--lsp" "herb-language-server --stdio"
 						  "--lsp" "stimulus-language-server --stdio"))))
+
+;; (add-to-list 'eglot-server-programs
+;;              '(templ-ts-mode . ("lspx" "--lsp" "templ lsp" "--lsp" "tailwindcss-language-server --stdio")))
+
+;; (setq-default eglot-workspace-configuration
+;;               (list (cons :tailwindCSS
+;;                           (list :includeLanguages (list :templ "html")
+;;                                 ))))
 
 (provide 'web-lang)
 
