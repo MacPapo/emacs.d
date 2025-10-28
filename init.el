@@ -420,6 +420,14 @@
   (completion-category-defaults nil)
   (completion-category-overrides nil))
 
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles partial-completion))))
+  ;;(completion-pcm-leading-wildcard t)) ;; Emacs 31: partial-completion behaves like substring
+  )
+
 (use-package consult
   :ensure t
   :bind (;; C-c bindings in `mode-specific-map'
@@ -634,11 +642,32 @@
   :ensure t
   :bind (("C-x g" . magit-status)))
 
+(use-package git-modes
+  :ensure t)
+
+(use-package diff-hl
+  :ensure t
+  :config
+  (use-package dired
+    :config
+    (add-hook 'dired-mode-hook #'diff-hl-dired-mode-unless-remote))
+
+  (use-package magit
+    :ensure t
+    :config
+    (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh))
+
+  (global-diff-hl-mode)
+  (global-diff-hl-show-hunk-mouse-mode))
+
 (require 'data-langs)
+(require 'elisp-lang)
 (require 'c-cpp-lang)
 (require 'web-lang)
 (require 'ruby-lang)
 (require 'go-lang)
+
+(require 'misc)
 
 (provide 'init)
 
