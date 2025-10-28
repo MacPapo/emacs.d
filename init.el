@@ -98,7 +98,17 @@
 				(car args))
 			(cdr args))))))
 
+(use-package exec-path-from-shell
+  :demand t
+  :ensure t
+  :config
+  (exec-path-from-shell-initialize))
+
+(use-package system-packages :ensure t)
+(use-package system-packages-ext :after exec-path-from-shell)
+
 (use-package emacs
+  :after exec-path-from-shell
   :if (eq system-type 'darwin)
   :custom
   (ns-use-srgb-colorspace nil)
@@ -122,17 +132,9 @@
     :config
     (menu-bar-mode +1))
 
-  (use-package exec-path-from-shell
-    :demand t
-    :ensure t
-    :config
-    (exec-path-from-shell-initialize)
-    (let ((gls (executable-find "gls")))
-      (when gls (progn
-		  (setq insert-directory-program gls))))))
-
-(use-package system-packages :ensure t)
-(use-package system-packages-ext :after (use-package exec-path-from-shell))
+  (let ((gls (executable-find "gls")))
+    (when gls (progn
+		(setq insert-directory-program gls)))))
 
 (use-package diminish :ensure t)
 
