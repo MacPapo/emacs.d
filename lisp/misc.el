@@ -6,15 +6,17 @@
 
 ;;; Code:
 
-(use-package guru-mode
-  :ensure t
-  :hook (after-init . guru-global-mode))
-
 (use-package crontab-mode
   :ensure t)
 
 (use-package lorem-ipsum
   :ensure t)
+
+(use-package cue-sheet-mode
+  :ensure t)
+
+(use-package cue-gen
+  :ensure nil)
 
 (use-package string-inflection
   :ensure t

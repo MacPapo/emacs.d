@@ -390,7 +390,10 @@
 (use-package avy
   :ensure t
   :bind (("C-c j" . avy-goto-line)
-	 ("C-'" . avy-goto-char-timer)))
+	 ("C-c C-j" . avy-resume)
+	 ("C-'" . avy-goto-char-timer))
+  :config
+  (avy-setup-default))
 
 (use-package vertico
   :ensure t
