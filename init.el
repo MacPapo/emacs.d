@@ -1,8 +1,7 @@
 ;;; init.el --- The Zen Config (Emacs 30.2) -*- lexical-binding: t; -*-
 
-
 ;;; Commentary:
-;;
+;; Configurazione pulita, dichiarativa e ottimizzata per le massime prestazioni.
 
 ;;; Code:
 
@@ -13,10 +12,10 @@
 (add-hook 'emacs-startup-hook
           (lambda () (setq gc-cons-threshold (* 16 1024 1024))))
 
-(when (memq window-system '(mac ns))
+(when (eq system-type 'darwin)
   (let ((my-paths '("/opt/homebrew/bin"
                     "/opt/homebrew/sbin"
-                    "~/.local/share/mise/shims"
+		    "~/.rbenv/shims"
                     "/usr/local/bin"
                     "/usr/bin"
                     "/bin")))
@@ -31,14 +30,16 @@
 (use-package emacs
   :init
   ;; --- Identità e Sicurezza ---
-  ;; Carica il file dei segreti se esiste (ignorando gli errori se manca)
   (let ((secrets-file (expand-file-name "secrets.el" user-emacs-directory)))
     (when (file-exists-p secrets-file)
       (load secrets-file nil t)))
 
-  ;; --- Moduli Custom (Stile Purcell) ---
-  ;; Aggiungi la cartella 'lisp' ai percorsi in cui Emacs cerca i file sorgente
+  ;; --- Moduli Custom ---
   (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+
+  ;; --- Ottimizzazioni di Boot e Anti-Lag ---
+  (setq initial-major-mode 'fundamental-mode)        ; Boot più rapido
+  (setq redisplay-skip-fontification-on-input t)     ; Niente microscatti digitando veloce
 
   ;; --- UI Pulita ---
   (setq inhibit-startup-screen t
@@ -51,28 +52,32 @@
         use-dialog-box nil
         inhibit-startup-echo-area-message (user-login-name))
 
-  ;; --- Comportamenti e Default Moderni (Loot di Bedrock) ---
+  ;; --- Comportamenti e Default Moderni ---
   (setq native-comp-async-report-warnings-errors 'silent)
   (setq sentence-end-double-space nil)
   (setq switch-to-buffer-obey-display-actions t)
 
-  ;; --- Scorrimento Fluido al Pixel ---
-  (pixel-scroll-precision-mode 1)
-  (setq mouse-wheel-tilt-scroll t)
-  (setq mouse-wheel-flip-direction t)
+  ;; --- Undo Maggiorato ---
+  (setq undo-limit (* 13 160000)
+        undo-strong-limit (* 13 240000)
+        undo-outer-limit (* 13 24000000))
+
+  ;; --- Scorrimento Solido e Prevedibile ---
+  ;; Impediamo i salti di mezza pagina e forziamo lo scorrimento riga per riga.
+  (setq auto-window-vscroll nil)
+  (setq scroll-conservatively 101)
 
   ;; --- Editing Base ---
   (delete-selection-mode 1)
   (electric-pair-mode 1)
 
-  ;; Sblocco comandi avanzati
   (put 'narrow-to-region 'disabled nil)
   (put 'narrow-to-page 'disabled nil)
   (put 'narrow-to-defun 'disabled nil)
   (put 'upcase-region 'disabled nil)
   (put 'downcase-region 'disabled nil)
 
-  ;; --- Minibuffer e Autocompletamento (Fase 2) ---
+  ;; --- Minibuffer e Autocompletamento ---
   (fido-vertical-mode 1)
 
   (setq completion-ignore-case t
@@ -80,17 +85,23 @@
         read-file-name-completion-ignore-case t
         read-extended-command-predicate #'command-completion-default-include-p)
 
+  ;; Proteggiamo il testo del prompt nel minibuffer
+  (setq minibuffer-prompt-properties
+        '(read-only t intangible t cursor-intangible t face minibuffer-prompt))
+  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+
   ;; --- Memoria e Navigazione ---
   (savehist-mode 1)
   (setq history-length 100)
 
   (recentf-mode 1)
   (setq recentf-max-saved-items 100)
-  (setq recentf-keep '(file-remote-p file-readable-p)) ;; Evita freeze con file di rete
+  (setq recentf-keep '(file-remote-p file-readable-p))
 
   (windmove-default-keybindings)
 
   ;; --- Filesystem e Backup ---
+  (setq create-lockfiles nil)
   (setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backups")))
         auto-save-file-name-transforms `((".*" ,(concat user-emacs-directory "auto-save-list/") t)))
 
@@ -101,7 +112,6 @@
   (setq comment-auto-fill-only-comments t)
   (setq-default fill-column 80)
 
-  ;; Attivalo solo quando scrivi codice o testo
   (add-hook 'prog-mode-hook 'auto-fill-mode)
   (add-hook 'text-mode-hook 'auto-fill-mode)
 
@@ -163,21 +173,18 @@
   (display-buffer-alist
    '(
      ;; 1. BUFFER DI AIUTO E INFORMAZIONI
-     ;; Nome del buffer inizia con *Help*, *Apropos*, *info*, *Messages* ecc.
      ("\\*\\(Help\\|Apropos\\|info\\|Messages\\|Warnings\\|Compile-Log\\)\\*"
       (display-buffer-reuse-window display-buffer-at-bottom)
-      (window-height . 0.3)        ; Occupa il 30% dell'altezza dello schermo
-      (reusable-frames . visible)) ; Usa la finestra se esiste già
+      (window-height . 0.3)
+      (reusable-frames . visible))
 
      ;; 2. COMPILAZIONE E TEST
-     ;; I buffer *compilation* (es. quando lanci 'M-x compile' per Go o C)
      ("\\*compilation\\*"
       (display-buffer-reuse-window display-buffer-at-bottom)
       (window-height . 0.3)
       (reusable-frames . visible))
 
      ;; 3. COMPLETAMENTO (Completions)
-     ;; Se decidi di usare finestre di completamento standard in futuro
      ("\\*Completions\\*"
       (display-buffer-reuse-window display-buffer-at-bottom)
       (window-height . 0.2)))))
@@ -186,7 +193,7 @@
   :init
   (setq whitespace-style '(face empty trailing lines-tail))
   :hook ((prog-mode . whitespace-mode)
-	 (text-mode . whitespace-mode)))
+         (text-mode . whitespace-mode)))
 
 (use-package display-line-numbers
   :hook (prog-mode . display-line-numbers-mode)
@@ -243,8 +250,6 @@
   :custom
   (compilation-scroll-output t)
   (compilation-always-kill t)
-  ;; Quando premi M-g n (next-error) per saltare tra gli errori nel codice,
-  ;; ignora i semplici "info" o "warning" e fermati solo sugli errori critici (livello 2).
   (compilation-skip-threshold 2)
   (compilation-ask-about-save nil)
   :bind
@@ -261,6 +266,7 @@
   :bind (("C-x g" . vc-dir))
   :config
   (setq vc-follow-symlinks t)
+  (setq vc-git-diff-switches '("--histogram")) ;; Patch: Diff più intelligenti
   (add-hook 'vc-dir-mode-hook 'hl-line-mode))
 
 (use-package eglot
@@ -269,6 +275,7 @@
   (eglot-events-buffer-config '(:size 0))
   (eglot-send-changes-idle-time 0.1)
   (eglot-extend-to-xref t)
+  (eglot-sync-connect 0) ;; Patch: Impedisce il blocco della UI all'apertura file
   :config
   (fset #'jsonrpc--log-event #'ignore)
   (add-to-list 'eglot-stay-out-of 'font-lock)
@@ -281,7 +288,7 @@
                 (when (eglot-managed-p)
                   (ignore-errors (call-interactively #'eglot-code-action-organize-imports))
                   (ignore-errors (eglot-format-buffer))))
-              nil t)) ; 't' finale = locale al buffer, vitale!
+              nil t))
   (add-hook 'eglot-managed-mode-hook #'zen/eglot-setup-buffer))
 
 (use-package c-mode
@@ -303,7 +310,7 @@
   :ensure t
   :defer t
   :hook ((go-mode . eglot-ensure)
-	 (go-mode . (lambda () (setq indent-tabs-mode t)))))
+         (go-mode . (lambda () (setq indent-tabs-mode t)))))
 
 (use-package yaml-mode
   :ensure t
@@ -317,7 +324,6 @@
 (require 'zen-editing)
 
 ;; --- Customizzazioni Autogenerate ---
-;; Carica il file custom alla fine per garantirgli la priorità
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (when (file-exists-p custom-file)
   (load custom-file nil t))
