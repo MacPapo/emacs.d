@@ -33,6 +33,8 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
       (message "Core: Compiling Tree-sitter grammar for %s..." lang)
       (treesit-install-language-grammar lang))))
 
+(core-treesit-auto-install)
+
 ;; ==========================================
 ;; SECTION 1.5: TREE-SITTER MINIMALISM (ACME)
 ;; ==========================================
