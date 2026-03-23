@@ -14,15 +14,18 @@
 
 ;; Define the canonical sources for the grammars.
 (setq treesit-language-source-alist
-      '((go         "https://github.com/tree-sitter/tree-sitter-go")
-	(gomod      "https://github.com/camdencheek/tree-sitter-go-mod")
-	(ruby       "https://github.com/tree-sitter/tree-sitter-ruby")
-	(yaml       "https://github.com/ikatyang/tree-sitter-yaml")
-	(dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile")
-	(json       "https://github.com/tree-sitter/tree-sitter-json")
-	(css        "https://github.com/tree-sitter/tree-sitter-css")
-	(javascript "https://github.com/tree-sitter/tree-sitter-javascript")
-	(typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")))
+      '(
+	;; official grammars
+	(go         "https://github.com/tree-sitter/tree-sitter-go"         "v0.23.4")
+	(ruby       "https://github.com/tree-sitter/tree-sitter-ruby"       "v0.23.1")
+	(json       "https://github.com/tree-sitter/tree-sitter-json"       "v0.24.8")
+	(css        "https://github.com/tree-sitter/tree-sitter-css"        "v0.23.2")
+	(javascript "https://github.com/tree-sitter/tree-sitter-javascript" "v0.23.1")
+
+	;; community grammars
+	(yaml       "https://github.com/ikatyang/tree-sitter-yaml"          "v0.5.0")
+	(dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile" "v0.2.0")
+	))
 
 (defun core-treesit-auto-install ()
   "Compile and install missing Tree-sitter grammars automatically.
@@ -94,7 +97,7 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
 ;; --- Golang ---
 (use-package go-ts-mode
   :defer t
-  :mode "\\.go\\'"
+  :mode ("\\.go\\'" "/go\\.mod\\'")
   :hook (go-ts-mode . eglot-ensure)
   :config
   ;; Optimize Gopls: enable static checks and case-sensitive matching.
@@ -103,8 +106,6 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
 		 '((go-ts-mode go-mod-ts-mode) .
 		   ("gopls" :initializationOptions
 		    (:staticcheck t :matcher "CaseSensitive"))))))
-
-(use-package go-mod-ts-mode :defer t :mode "/go\\.mod\\'")
 
 ;; --- Ruby ---
 (use-package ruby-ts-mode
@@ -123,16 +124,10 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
   :defer t
   :mode "\\(?:Dockerfile\\(?:\\..*\\)?\\|\\.[Dd]ockerfile\\)\\'")
 
-;; --- Frontend (JS/TS) ---
+;; --- Frontend ---
 (use-package js-ts-mode
   :defer t
   :hook (js-ts-mode . eglot-ensure))
-
-(use-package typescript-ts-mode
-  :defer t
-  :mode "\\.ts\\'"
-  :hook (typescript-ts-mode . eglot-ensure))
-
 
 ;; ==========================================
 ;; SECTION 5: WEB & TEMPLATES (FALLBACK)
