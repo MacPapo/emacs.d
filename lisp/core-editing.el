@@ -211,5 +211,9 @@ Requires a single key to indicate the wrapper (e.g., (, [, {, \", ')."
 
 (keymap-global-set "M-i" core-edit-inner-map)
 
+(keymap-global-set "M-z" 'zap-up-to-char)
+
+(keymap-global-set "C-x K" #'kill-current-buffer)
+
 (provide 'core-editing)
 ;;; core-editing.el ends here

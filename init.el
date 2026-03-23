@@ -107,6 +107,8 @@
 (add-hook 'text-mode-hook 'auto-fill-mode)
 
 ;; --- Core Editor Behavior ---
+(add-hook 'before-save-hook #'delete-trailing-whitespace)
+
 (setq sentence-end-double-space nil)
 (setq switch-to-buffer-obey-display-actions t)
 
@@ -129,6 +131,12 @@
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
 
+(use-package repeat
+  :init (repeat-mode 1)
+  :custom
+  (repeat-exit-timeout 3)
+  (repeat-exit-key (kbd "RET")))
+
 ;; --- Minibuffer & Native Completion ---
 (fido-vertical-mode 1)
 ;; Set compute delay to 0 for instantaneous fido-mode feedback.
@@ -150,7 +158,14 @@
 	      ("M-p" . completion-preview-prev-candidate)))
 
 (use-package hippie-exp
-  :bind (("M-/" . hippie-expand)))
+  :bind (("M-/" . hippie-expand))
+  :config
+  (setq hippie-expand-try-functions-list
+        '(try-expand-dabbrev
+          try-expand-dabbrev-all-buffers
+          try-expand-dabbrev-from-kill
+          try-complete-file-name-partially
+          try-complete-file-name)))
 
 ;; --- Filesystem, Navigation & Backup ---
 (savehist-mode 1)
@@ -159,6 +174,19 @@
 (recentf-mode 1)
 (setq recentf-max-saved-items 100
       recentf-keep '(file-remote-p file-readable-p))
+
+(use-package saveplace
+  :init (save-place-mode 1)
+  :custom (save-place-limit 500))
+
+(use-package uniquify
+  :custom
+  (uniquify-buffer-name-style 'forward)
+  (uniquify-separator "/")
+  (uniquify-after-kill-buffer-p t)
+  (uniquify-ignore-buffers-re "^\\*"))
+
+(keymap-global-set "C-c r" #'rename-visited-file)
 
 ;; Disable symbolic lockfiles (.#filename) as they clobber modern dev tools (e.g., Vite/Webpack).
 (setq create-lockfiles nil)
@@ -202,6 +230,39 @@
       (display-buffer-reuse-window display-buffer-at-bottom)
       (window-height . 0.2)))))
 
+;; --- Workspaces (Tab Bar) ---
+(use-package tab-bar
+  :init
+  ;; Enable the tab bar globally upon startup
+  (tab-bar-mode 1)
+  ;; Enable history tracking so we can undo/redo window layouts
+  (tab-bar-history-mode 1)
+  :custom
+  (tab-bar-show 1)                      ;; Hide the bar completely if only 1 tab is open
+  (tab-bar-close-button-show nil)       ;; Acme style: Remove the 'X' button (use keyboard)
+  (tab-bar-new-button-show nil)         ;; Acme style: Remove the '+' button
+  (tab-bar-new-tab-choice "*scratch*")  ;; Fresh tabs start with a clean, harmless buffer
+  (tab-bar-tab-hints t)                 ;; Show numbers (1. Backend, 2. Frontend) for fast jumping
+  ;; Strip down the UI: Show only the tabs and the global system info (like time/battery if enabled).
+  ;; This removes the ugly default history arrows (< >) from the top bar.
+  (tab-bar-format '(tab-bar-format-tabs tab-bar-format-align-right tab-bar-format-global))
+  :bind
+  (;; Window layout history (Undo/Redo splits within the current tab)
+   ("M-[" . tab-bar-history-back)
+   ("M-]" . tab-bar-history-forward)))
+
+(use-package ediff
+  :defer t
+  :custom
+  (ediff-window-setup-function 'ediff-setup-windows-plain)
+  (ediff-split-window-function 'split-window-horizontally))
+
+(use-package ibuffer
+  :bind (("C-x C-b" . ibuffer))
+  :custom
+  (ibuffer-expert t)
+  (ibuffer-show-empty-filter-groups nil))
+
 ;; --- Development Tools ---
 (use-package display-line-numbers
   :hook (prog-mode . display-line-numbers-mode)
@@ -215,14 +276,19 @@
   (lazy-count-prefix-format "[%s of %s] "))
 
 (use-package dired
-  :custom (dired-listing-switches "-AFlbhv --group-directories-first")
+  :custom
+  (dired-listing-switches "-AFlbhv --group-directories-first")
+  (dired-omit-files "^\\.?#\\|^\\.[a-zA-Z0-9]+\\|\\.DS_Store$\\|\\.class$")
+  :hook (dired-mode . dired-omit-mode)
   :config
   (setq dired-recursive-copies 'always
 	dired-recursive-deletes 'always
 	delete-by-moving-to-trash t
 	dired-dwim-target t))
 
-(use-package which-key :init (which-key-mode 1) :custom (which-key-idle-delay 0.5))
+(use-package which-key
+  :init (which-key-mode 1)
+  :custom (which-key-idle-delay 0.5))
 
 (use-package project
   :custom (project-mode-line t)
