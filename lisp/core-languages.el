@@ -50,13 +50,10 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
 ;; Transparently redirect traditional regex-based modes to their modern
 ;; C-powered Tree-sitter equivalents.
 (setq major-mode-remap-alist
-      '((ruby-mode       . ruby-ts-mode)
-	(yaml-mode       . yaml-ts-mode)
-	(dockerfile-mode . dockerfile-ts-mode)
-	(json-mode       . json-ts-mode)
-	(css-mode        . css-ts-mode)
-	(js-mode         . js-ts-mode)
-	(typescript-mode . typescript-ts-mode)))
+      '((ruby-mode      . ruby-ts-mode)
+        (js-json-mode   . json-ts-mode)
+        (css-mode       . css-ts-mode)
+        (js-mode        . js-ts-mode)))
 
 ;; ==========================================
 ;; SECTION 3: CORE LSP (EGLOT) ENGINE
@@ -119,13 +116,22 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
     (add-to-list 'eglot-server-programs '((ruby-mode ruby-ts-mode) "ruby-lsp"))))
 
 ;; --- Data & Config Formats ---
-(use-package yaml-ts-mode :defer t)
-(use-package dockerfile-ts-mode :defer t)
-(use-package json-ts-mode :defer t)
+(use-package yaml-ts-mode :defer t :mode "\\.ya?ml\\'")
+(use-package json-ts-mode :defer t :mode "\\.json\\'")
+
+(use-package dockerfile-ts-mode
+  :defer t
+  :mode "\\(?:Dockerfile\\(?:\\..*\\)?\\|\\.[Dd]ockerfile\\)\\'")
 
 ;; --- Frontend (JS/TS) ---
-(use-package js-ts-mode :defer t :hook (js-ts-mode . eglot-ensure))
-(use-package typescript-ts-mode :defer t :hook (typescript-ts-mode . eglot-ensure))
+(use-package js-ts-mode
+  :defer t
+  :hook (js-ts-mode . eglot-ensure))
+
+(use-package typescript-ts-mode
+  :defer t
+  :mode "\\.ts\\'"
+  :hook (typescript-ts-mode . eglot-ensure))
 
 
 ;; ==========================================
@@ -136,9 +142,9 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
 ;; where tree-sitter injection currently falls short.
 (use-package web-mode
   :ensure t
-  :mode (("\\.erb\\'" . web-mode)
-	 ("\\.html?\\'" . web-mode)
-	 ("\\.tsx?\\'" . web-mode))
+  :mode (("\\.erb\\'"		.	web-mode)
+         ("\\.html?\\'"		.	web-mode)
+         ("\\.[jt]sx\\'"	.	web-mode))
   :custom
   (web-mode-markup-indent-offset 2)
   (web-mode-css-indent-offset 2)

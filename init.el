@@ -58,7 +58,10 @@
 ;; --- Package Management ---
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-(require 'use-package)
+
+(package-initialize)
+(unless package-archive-contents
+  (package-refresh-contents))
 
 ;; --- Identity & Custom Modules ---
 (let ((secrets-file (expand-file-name "secrets.el" user-emacs-directory)))
