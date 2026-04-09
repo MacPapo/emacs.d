@@ -1,6 +1,6 @@
 ;;; init.el --- My Core Configuration (Emacs 30.2) -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2026 by Jacopo Costantini
+;; Copyright (C) 2026 Jacopo Costantini
 
 ;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
 ;; License: GNU General Public License version 3 (or later)
@@ -50,6 +50,7 @@
                     "/opt/homebrew/sbin"
                     "~/.rbenv/shims"
                     "~/go/bin"
+		    "~/.nvm/versions/node/v24.14.1/bin"
                     "/usr/local/bin"
                     "/usr/bin"
                     "/bin")))
@@ -64,7 +65,7 @@
       ('dark (load-theme 'ascetic-dark t))))
 
   (add-hook 'ns-system-appearance-change-functions #'core/apply-theme)
-  (set-face-attribute 'default nil :family "Atkinson Hyperlegible Mono" :height 125)
+  (set-face-attribute 'default nil :family "Atkinson Hyperlegible Mono" :height 145)
 
   (let ((gls (executable-find "gls")))
     (when gls (setq insert-directory-program gls))))

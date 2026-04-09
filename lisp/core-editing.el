@@ -1,6 +1,6 @@
-;;; core-editing.el --- My custom functions for text editing -*- lexical-binding: t; -*-
+;;; core-editing.el --- Surgical text manipulation -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2026 by Jacopo Costantini
+;; Copyright (C) 2026 Jacopo Costantini
 
 ;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
 ;; License: GNU General Public License version 3 (or later)
@@ -13,10 +13,10 @@
 ;;; Code:
 
 ;; ==========================================
-;; SECTION 1: LINE MANIPULATION
+;; 1. LINE MANIPULATION
 ;; ==========================================
 
-;; Note: `duplicate-dwim` is native in Emacs 29+, so no need to write it!
+;; Note: `duplicate-dwim` is native in Emacs 29+, bound in Section 4.
 
 (defun core-edit-move-up-dwim ()
   "Move the selected line or lines up with mathematical precision."
@@ -91,9 +91,8 @@
   (interactive)
   (delete-indentation t))
 
-
 ;; ==========================================
-;; SECTION 2: SURGICAL SELECTIONS (The "Nouns")
+;; 2. SURGICAL SELECTIONS (The "Nouns")
 ;; ==========================================
 
 (defun core-edit-select-inner-symbol ()
@@ -137,9 +136,8 @@
             (goto-char (1- end-paren))))
       (user-error "Core: Not inside any parentheses!"))))
 
-
 ;; ==========================================
-;; SECTION 3: ADVANCED MANIPULATIONS (The "Verbs")
+;; 3. ADVANCED MANIPULATIONS (The "Verbs")
 ;; ==========================================
 
 (defun core-edit-change-dwim ()
@@ -154,9 +152,8 @@ Replaces Vim's 'c' behavior for selections and 'ciw' for words."
       (user-error "Core: No target to vaporize here!"))))
 
 (defun core-edit-surround-dwim (char)
-  "Surround the active selection or the symbol under the cursor with CHAR.
-Requires a single key to indicate the wrapper (e.g., (, [, {, \", ')."
-  (interactive "cSurround with: ") ;; Native interactive character acquisition
+  "Surround the active selection or the symbol under the cursor with CHAR."
+  (interactive "cSurround with: ")
   (let (beg end)
     (if (use-region-p)
         (setq beg (region-beginning) end (region-end))
@@ -166,7 +163,6 @@ Requires a single key to indicate the wrapper (e.g., (, [, {, \", ')."
         (user-error "Core: No text to surround here!")))
 
     (let* ((char-str (char-to-string char))
-           ;; Using alist-get for a faster and cleaner lookup
            (close-char (if-let* ((pair (alist-get char '((?\( . ?\))
                                                          (?\[ . ?\])
                                                          (?\{ . ?\})
@@ -182,43 +178,33 @@ Requires a single key to indicate the wrapper (e.g., (, [, {, \", ')."
       (deactivate-mark)
       (message "Core: Surrounded with %s and %s" char-str close-char))))
 
-
 ;; ==========================================
-;; SECTION 4: KEYBINDINGS
+;; 4. KEYBINDINGS
 ;; ==========================================
 
-;; Using the new keymap-global-set API from Emacs 29+
-
-;; --- Lines ---
-;; Native Emacs 29+ binding instead of custom
-(keymap-global-set "C-c d" 'duplicate-dwim)
-(keymap-global-set "M-S-<down>" 'duplicate-dwim)
-
-(keymap-global-set "M-<up>" 'core-edit-move-up-dwim)
-(keymap-global-set "M-<down>" 'core-edit-move-down-dwim)
-
-;; Note the corrected syntax for C-return and C-S-return
-(keymap-global-set "C-<return>" 'core-edit-open-line-below)
-(keymap-global-set "C-S-<return>" 'core-edit-open-line-above)
-
-(keymap-global-set "M-J" 'core-edit-join-line-below)
-
-;; --- Actions (Verbs) ---
-(keymap-global-set "M-k" 'core-edit-change-dwim)
-(keymap-global-set "M-'" 'core-edit-surround-dwim)
-
-;; --- Selections (Nouns) ---
 (defvar-keymap core-edit-inner-map
   :doc "Keymap for inner selections (text objects)."
-  "s" #'core-edit-select-inner-symbol  ; Word
-  "q" #'core-edit-select-inner-quotes  ; Quotes (q)
-  "p" #'core-edit-select-inner-parens) ; Parens (p)
+  "s" #'core-edit-select-inner-symbol  ; Symbol/Word
+  "q" #'core-edit-select-inner-quotes  ; Quotes
+  "p" #'core-edit-select-inner-parens) ; Parens
 
-(keymap-global-set "M-i" core-edit-inner-map)
+;; --- Lines & General Editing ---
+(keymap-global-set "C-c d"        #'duplicate-dwim)
+(keymap-global-set "M-S-<down>"   #'duplicate-dwim)
+(keymap-global-set "M-<up>"       #'core-edit-move-up-dwim)
+(keymap-global-set "M-<down>"     #'core-edit-move-down-dwim)
+(keymap-global-set "C-<return>"   #'core-edit-open-line-below)
+(keymap-global-set "C-S-<return>" #'core-edit-open-line-above)
+(keymap-global-set "M-J"          #'core-edit-join-line-below)
 
-(keymap-global-set "M-z" 'zap-up-to-char)
+;; --- Actions (Verbs) & Selections (Nouns) ---
+(keymap-global-set "M-k"          #'core-edit-change-dwim)
+(keymap-global-set "M-'"          #'core-edit-surround-dwim)
+(keymap-global-set "M-i"          core-edit-inner-map)
+(keymap-global-set "M-z"          #'zap-up-to-char)
 
-(keymap-global-set "C-x K" #'kill-current-buffer)
+;; --- Buffers ---
+(keymap-global-set "C-x K"        #'kill-current-buffer)
 
 (provide 'core-editing)
 ;;; core-editing.el ends here

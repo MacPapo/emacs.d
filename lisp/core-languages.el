@@ -1,40 +1,34 @@
-;;; core-languages.el --- Programming languages and LSP -*- lexical-binding: t; -*-
+;;; core-languages.el --- Syntax, LSP and Grammars -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2026 by Jacopo Costantini
+;; Copyright (C) 2026 Jacopo Costantini
 
 ;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
 ;; License: GNU General Public License version 3 (or later)
 
 ;;; Commentary:
-;; Consolidates all programming language behaviors, LSP (Eglot) settings,
-;; and Tree-sitter grammar management.
-;; Automatically compiles Tree-sitter grammars locally to ensure perfect
-;; compatibility across macOS (Homebrew) and Linux (Debian) environments.
+;; Consolidates programming language behaviors, LSP (Eglot) settings,
+;; and Tree-sitter grammar management. Relies on local C compilation
+;; to ensure perfect compatibility across OS environments.
 
 ;;; Code:
 
 ;; ==========================================
-;; SECTION 1: TREE-SITTER AUTO-COMPILATION
+;; 1. TREE-SITTER AUTO-COMPILATION
 ;; ==========================================
 
-;; Define the canonical sources for the grammars.
 (setq treesit-language-source-alist
-      '(
-	;; official grammars
-	(go         "https://github.com/tree-sitter/tree-sitter-go"         "v0.23.4")
-	(ruby       "https://github.com/tree-sitter/tree-sitter-ruby"       "v0.23.1")
-	(json       "https://github.com/tree-sitter/tree-sitter-json"       "v0.24.8")
-	(css        "https://github.com/tree-sitter/tree-sitter-css"        "v0.23.2")
-	(javascript "https://github.com/tree-sitter/tree-sitter-javascript" "v0.23.1")
-
-	;; community grammars
-	(yaml       "https://github.com/ikatyang/tree-sitter-yaml"          "v0.5.0")
-	(dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile" "v0.2.0")
-	))
+      '(;; Official grammars
+        (go         "https://github.com/tree-sitter/tree-sitter-go"         "v0.23.4")
+        (ruby       "https://github.com/tree-sitter/tree-sitter-ruby"       "v0.23.1")
+        (json       "https://github.com/tree-sitter/tree-sitter-json"       "v0.24.8")
+        (css        "https://github.com/tree-sitter/tree-sitter-css"        "v0.23.2")
+        (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "v0.23.1")
+        ;; Community grammars
+        (yaml       "https://github.com/ikatyang/tree-sitter-yaml"          "v0.5.0")
+        (dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile" "v0.2.0")))
 
 (defun core-treesit-auto-install ()
-  "Compile and install missing Tree-sitter grammars automatically.
-Relies on the system's C compiler (clang on macOS, gcc on Linux)."
+  "Compile and install missing Tree-sitter grammars automatically."
   (interactive)
   (dolist (lang (mapcar #'car treesit-language-source-alist))
     (unless (treesit-language-available-p lang)
@@ -44,19 +38,18 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
 (core-treesit-auto-install)
 
 ;; ==========================================
-;; SECTION 2: NATIVE MODE REMAPPING
+;; 2. NATIVE MODE REMAPPING
 ;; ==========================================
 
-;; Transparently redirect traditional regex-based modes to their modern
-;; C-powered Tree-sitter equivalents.
+;; Redirect traditional regex-based modes to their modern C-powered equivalents.
 (setq major-mode-remap-alist
-      '((ruby-mode      . ruby-ts-mode)
-        (js-json-mode   . json-ts-mode)
-        (css-mode       . css-ts-mode)
-        (js-mode        . js-ts-mode)))
+      '((ruby-mode    . ruby-ts-mode)
+        (js-json-mode . json-ts-mode)
+        (css-mode     . css-ts-mode)
+        (js-mode      . js-ts-mode)))
 
 ;; ==========================================
-;; SECTION 3: CORE LSP (EGLOT) ENGINE
+;; 3. CORE LSP (EGLOT) ENGINE
 ;; ==========================================
 
 (use-package eglot
@@ -69,15 +62,14 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
   (fset #'jsonrpc--log-event #'ignore)
   (add-to-list 'eglot-stay-out-of 'font-lock)
 
-  (defun core-eglot-setup-buffer ()
-    "Activate inlay hints."
+  (defun core/eglot-setup-buffer ()
+    "Activate inlay hints for Eglot buffers."
     (eglot-inlay-hints-mode 1))
 
-  (add-hook 'eglot-managed-mode-hook #'core-eglot-setup-buffer))
-
+  (add-hook 'eglot-managed-mode-hook #'core/eglot-setup-buffer))
 
 ;; ==========================================
-;; SECTION 4: LANGUAGE SPECIFICS
+;; 4. LANGUAGE SPECIFICS
 ;; ==========================================
 
 ;; --- Golang ---
@@ -85,7 +77,7 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
   :defer t
   :mode ("\\.go\\'" "/go\\.mod\\'" "/go\\.work\\'")
   :hook ((go-ts-mode . eglot-ensure)
-	 (go-ts-mode . (lambda ()
+         (go-ts-mode . (lambda ()
                          (add-hook 'before-save-hook #'eglot-format-buffer -10 t)
                          (add-hook 'before-save-hook #'eglot-code-action-organize-imports t t))))
   :config
@@ -93,26 +85,21 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
     (add-to-list 'eglot-server-programs
                  '((go-ts-mode go-mod-ts-mode go-work-ts-mode) .
                    ("gopls" :initializationOptions
-                    (
-		     :staticcheck t
-		     :gofumpt t
-		     :usePlaceholders t
-		     :hints (
-			     :assignVariableTypes t
-			     :compositeLiteralFields t
-			     :constantValues t
-			     :functionTypeParameters t
-			     :parameterNames t
-			     :rangeVariableTypes t)
-		     )
-		    )))))
+                    (:staticcheck t
+                     :gofumpt t
+                     :usePlaceholders t
+                     :hints (:assignVariableTypes t
+                             :compositeLiteralFields t
+                             :constantValues t
+                             :functionTypeParameters t
+                             :parameterNames t
+                             :rangeVariableTypes t)))))))
 
 ;; --- Ruby ---
 (use-package ruby-ts-mode
   :defer t
   :hook (ruby-ts-mode . eglot-ensure)
   :config
-  ;; Ensure Eglot knows to use ruby-lsp for the Tree-sitter mode.
   (with-eval-after-load 'eglot
     (add-to-list 'eglot-server-programs '((ruby-mode ruby-ts-mode) "ruby-lsp"))))
 
@@ -124,31 +111,27 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
   :defer t
   :mode "\\(?:Dockerfile\\(?:\\..*\\)?\\|\\.[Dd]ockerfile\\)\\'")
 
-;; --- Frontend ---
+;; --- Frontend (JavaScript) ---
 (use-package js-ts-mode
   :defer t
+  :mode "\\.m?js\\'"  ; Explicitly bind JS files to force Tree-sitter
   :hook (js-ts-mode . eglot-ensure))
 
 ;; ==========================================
-;; SECTION 5: WEB & TEMPLATES (FALLBACK)
+;; 5. WEB & TEMPLATES (FALLBACK)
 ;; ==========================================
 
-;; Rely on regex-based web-mode for complex template interpolation (ERB)
-;; where tree-sitter injection currently falls short.
+;; Regex fallback for complex template interpolation (ERB, JSX)
 (use-package web-mode
   :ensure t
-  :mode (("\\.erb\\'"		.	web-mode)
-         ("\\.html?\\'"		.	web-mode)
-         ("\\.[jt]sx\\'"	.	web-mode))
+  :mode (("\\.erb\\'"  . web-mode)
+         ("\\.html?\\'" . web-mode)
+         ("\\.[jt]sx\\'" . web-mode))
   :custom
   (web-mode-markup-indent-offset 2)
   (web-mode-css-indent-offset 2)
   (web-mode-code-indent-offset 2)
-  (web-mode-enable-auto-pairing t)
-  :config
-  ;; Prevent web-mode from drawing invasive column highlights
-  (setq web-mode-enable-current-element-highlight t)
-  (setq web-mode-enable-current-column-highlight nil))
+  (web-mode-enable-auto-pairing t))
 
 (provide 'core-languages)
 ;;; core-languages.el ends here
