@@ -65,27 +65,16 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
 (use-package eglot
   :custom
   (eglot-autoshutdown t)
-  ;; Establish connection asynchronously to prevent initial lock-ups.
   (eglot-sync-connect 0)
   (eglot-extend-to-xref t)
-  ;; Send changes to LSP server before saving to ensure accurate formatting.
   (eglot-send-changes-idle-time 0.1)
   :config
   (fset #'jsonrpc--log-event #'ignore)
-  ;; Prevent Eglot from overriding our minimalist font-lock choices.
   (add-to-list 'eglot-stay-out-of 'font-lock)
 
-  (defun core-eglot-format-on-save ()
-    "Run LSP formatting and import organization safely before save."
-    (when (eglot-managed-p)
-      ;; Use ignore-errors so a crashed LSP doesn't prevent file saving
-      (ignore-errors (call-interactively #'eglot-code-action-organize-imports))
-      (ignore-errors (eglot-format-buffer))))
-
   (defun core-eglot-setup-buffer ()
-    "Activate inlay hints and save hooks."
-    (eglot-inlay-hints-mode 1)
-    (add-hook 'before-save-hook #'core-eglot-format-on-save nil t))
+    "Activate inlay hints."
+    (eglot-inlay-hints-mode 1))
 
   (add-hook 'eglot-managed-mode-hook #'core-eglot-setup-buffer))
 
@@ -97,15 +86,29 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
 ;; --- Golang ---
 (use-package go-ts-mode
   :defer t
-  :mode ("\\.go\\'" "/go\\.mod\\'")
-  :hook (go-ts-mode . eglot-ensure)
+  :mode ("\\.go\\'" "/go\\.mod\\'" "/go\\.work\\'")
+  :hook ((go-ts-mode . eglot-ensure)
+	 (go-ts-mode . (lambda ()
+                         (add-hook 'before-save-hook #'eglot-format-buffer -10 t)
+                         (add-hook 'before-save-hook #'eglot-code-action-organize-imports t t))))
   :config
-  ;; Optimize Gopls: enable static checks and case-sensitive matching.
   (with-eval-after-load 'eglot
     (add-to-list 'eglot-server-programs
-		 '((go-ts-mode go-mod-ts-mode) .
-		   ("gopls" :initializationOptions
-		    (:staticcheck t :matcher "CaseSensitive"))))))
+                 '((go-ts-mode go-mod-ts-mode go-work-ts-mode) .
+                   ("gopls" :initializationOptions
+                    (
+		     :staticcheck t
+		     :gofumpt t
+		     :usePlaceholders t
+		     :hints (
+			     :assignVariableTypes t
+			     :compositeLiteralFields t
+			     :constantValues t
+			     :functionTypeParameters t
+			     :parameterNames t
+			     :rangeVariableTypes t)
+		     )
+		    )))))
 
 ;; --- Ruby ---
 (use-package ruby-ts-mode
