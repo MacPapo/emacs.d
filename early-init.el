@@ -1,5 +1,10 @@
 ;;; early-init.el --- Early Startup Optimization -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 by Jacopo Costantini
+
+;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
+;; License: GNU General Public License version 3 (or later)
+
 ;;; Commentary:
 ;; Low-level Emacs boot optimizations.
 ;; Modifies the environment before GUI initialization or package loading

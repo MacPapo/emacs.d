@@ -1,5 +1,10 @@
 ;;; core-editing.el --- My custom functions for text editing -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 by Jacopo Costantini
+
+;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
+;; License: GNU General Public License version 3 (or later)
+
 ;;; Commentary:
 ;; A surgical editing module, ultra-fast and dependency-free.
 ;; Combines Vim's determinism (Inner selections) with modern editor

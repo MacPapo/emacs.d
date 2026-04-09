@@ -1,5 +1,10 @@
 ;;; core-languages.el --- Programming languages and LSP -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 by Jacopo Costantini
+
+;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
+;; License: GNU General Public License version 3 (or later)
+
 ;;; Commentary:
 ;; Consolidates all programming language behaviors, LSP (Eglot) settings,
 ;; and Tree-sitter grammar management.
@@ -37,14 +42,6 @@ Relies on the system's C compiler (clang on macOS, gcc on Linux)."
       (treesit-install-language-grammar lang))))
 
 (core-treesit-auto-install)
-
-;; ==========================================
-;; SECTION 1.5: TREE-SITTER MINIMALISM (ACME)
-;; ==========================================
-;;
-;; We force level 1 (or 2) to maintain a zero-distraction, monochrome editing
-;; environment consistent with the Acme philosophy.
-(setq treesit-font-lock-level 1)
 
 ;; ==========================================
 ;; SECTION 2: NATIVE MODE REMAPPING

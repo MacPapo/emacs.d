@@ -1,5 +1,10 @@
 ;;; init.el --- My Core Configuration (Emacs 30.2) -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 by Jacopo Costantini
+
+;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
+;; License: GNU General Public License version 3 (or later)
+
 ;;; Commentary:
 ;; Core configuration. Acme philosophy: text is text.
 ;; Predictability, speed, minimalism.
@@ -33,6 +38,8 @@
 ;; 02. ENVIRONMENT & MACOS INTEGRATION
 ;; ==========================================
 
+(set-face-attribute 'default nil :family "Atkinson Hyperlegible Mono" :height 110)
+
 (when (eq system-type 'darwin)
   (setq mac-command-modifier 'meta
         mac-option-modifier 'none
@@ -53,8 +60,8 @@
     "Dynamic theme switching based on OS appearance."
     (mapc #'disable-theme custom-enabled-themes)
     (pcase appearance
-      ('light (load-theme 'modus-operandi-tinted t))
-      ('dark (load-theme 'modus-vivendi t))))
+      ('light (load-theme 'ascetic-light t))
+      ('dark (load-theme 'ascetic-dark t))))
 
   (add-hook 'ns-system-appearance-change-functions #'core/apply-theme)
   (set-face-attribute 'default nil :family "Atkinson Hyperlegible Mono" :height 125)
@@ -77,8 +84,13 @@
     (load secrets-file nil t)))
 
 (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+(add-to-list 'custom-theme-load-path (expand-file-name "themes" user-emacs-directory))
+
 (require 'core-editing)
 (require 'core-languages)
+
+(unless (and (eq system-type 'darwin) (display-graphic-p))
+  (load-theme 'ascetic-dark t))
 
 ;; ==========================================
 ;; 04. UI & MONOCHROME PHILOSOPHY
@@ -97,24 +109,6 @@
 ;; Unclutter inactive elements
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
-
-;; Acme syntax rules: limit "neon" parsing.
-(setq font-lock-maximum-decoration 1)
-
-;; Typography & Modus settings
-(setq modus-themes-italic-constructs t
-      modus-themes-bold-constructs nil
-      modus-themes-mixed-fonts t
-      modus-themes-prompts '(intense bold)
-      modus-themes-completions '(intense)
-      modus-themes-headings
-      '((1 . (semibold variable-pitch 1.3))
-        (2 . (semibold variable-pitch 1.1))
-        (t . (semibold variable-pitch))))
-
-(setq modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi))
-(unless (and (eq system-type 'darwin) (display-graphic-p))
-  (load-theme 'modus-vivendi t))
 
 ;; ==========================================
 ;; 05. CORE EDITING PRIMITIVES
