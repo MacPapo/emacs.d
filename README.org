@@ -1,0 +1,55 @@
+#+TITLE: Ascetic Emacs Configuration
+#+AUTHOR: Jacopo Costantini (jcostd)
+#+STARTUP: showeverything
+#+OPTIONS: toc:nil author:nil date:nil num:nil
+
+* Ascetic Emacs
+
+This is my personal Emacs configuration.
+
+Let's be clear upfront: *This is not a framework. This is not a distribution.* Unlike previous projects, this repository exists solely to version control my personal tool. It is engineered specifically for my workflow, my aesthetic, and my brain.
+
+You are highly encouraged to read the code, understand the decisions, and steal the snippets you find useful. However, *I will not accept feature requests, and Pull Requests altering my workflow will be closed.*
+
+* Philosophy
+
+Built on Emacs 30+, this configuration follows strict architectural guidelines:
+
+- *Native over Bloat:* If Emacs has a native solution (Fido-vertical, Tab-bar, Eglot, Tree-sitter), external packages are discarded.
+- *Acme Inspired:* Text is text. UI chrome, scrollbars, toolbars, and artificial visual boundaries are stripped away.
+- *Clarity through Renunciation:* The UI relies on custom =ascetic= themes. Tree-sitter provides structural parsing handled entirely via typography (bold/italic). Color is strictly reserved for /signal/ (strings, constants, diagnostics, errors).
+- *Zero Friction:* Deterministic window placement, instant completion feedback, and direct macOS integration.
+
+* Architecture
+
+The configuration is strictly modular, separating logic from aesthetics.
+
+- =init.el= :: The bootstrap sequence, package management, and core engine.
+- =early-init.el= :: Pre-GUI and garbage collection optimizations.
+- =lisp/core-editing.el= :: Primitives, formatting boundaries, and text manipulation.
+- =lisp/core-languages.el= :: Tree-sitter grammars, LSP (Eglot) logic, and compilation workflows.
+- =themes/ascetic-dark-theme.el= :: Primary dark theme (Anthracite background, high-contrast signal).
+- =themes/ascetic-light-theme.el= :: Primary light theme (Digital vellum, ink typography).
+
+* Prerequisites
+
+To run this exact setup, you need:
+
+- GNU Emacs 30.2+ (compiled with =--with-tree-sitter=)
+- macOS (the config contains specific OS-level appearance syncing), though the core is highly portable to Linux.
+- Standard UNIX toolchain (=grep=, =find=, =git=)
+
+* Stealing this config
+
+If you want to clone it to test it or use it as a base for your own ascetic journey:
+
+#+BEGIN_SRC shell
+git clone https://github.com/jcostd/emacs.d.git ~/.emacs.d
+#+END_SRC
+
+Upon first launch, Emacs will pull the missing Tree-sitter grammars and essential ELPA/MELPA packages.
+
+* License
+
+Source code and themes are licensed under the *GPLv3*.
+See the =LICENSE= file for details.
