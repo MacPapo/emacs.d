@@ -327,6 +327,8 @@
   (compilation-always-kill t)
   (compilation-skip-threshold 2)
   (compilation-ask-about-save nil)
+  :hook
+  (compilation-filter . ansi-color-compilation-filter)
   :bind
   (("C-c c" . compile)
    ("C-c C" . project-compile)))
