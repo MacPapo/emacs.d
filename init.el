@@ -19,7 +19,7 @@
 (prefer-coding-system 'utf-8)
 
 ;; IPC/Network throughput. Critical for LSP/Eglot speed.
-(setq read-process-output-max (* 2 1024 1024))
+(setq read-process-output-max (* 4 1024 1024))
 
 ;; GC limits: allow 16MB allocations before pausing.
 (add-hook 'emacs-startup-hook
@@ -219,6 +219,8 @@
 
 (use-package completion-preview
   :init (global-completion-preview-mode 1)
+  :custom
+  (completion-preview-minimum-symbol-length 2)
   :bind (:map completion-preview-active-mode-map
               ("M-n" . completion-preview-next-candidate)
               ("M-p" . completion-preview-prev-candidate)))
