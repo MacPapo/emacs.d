@@ -222,9 +222,11 @@
   :init (global-completion-preview-mode 1)
   :custom
   (completion-preview-minimum-symbol-length 2)
+  (completion-preview-idle-delay 0.15)
   :bind (:map completion-preview-active-mode-map
               ("M-n" . completion-preview-next-candidate)
-              ("M-p" . completion-preview-prev-candidate)))
+              ("M-p" . completion-preview-prev-candidate)
+              ("M-i" . completion-preview-complete)))
 
 (use-package hippie-exp
   :bind (("M-/" . hippie-expand))

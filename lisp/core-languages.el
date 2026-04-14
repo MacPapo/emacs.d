@@ -53,8 +53,7 @@
   (eglot-send-changes-idle-time 0.1)
   :config
   (fset #'jsonrpc--log-event #'ignore)
-  (add-to-list 'eglot-stay-out-of 'font-lock)
-  (add-hook 'eglot-managed-mode-hook (lambda () (eglot-inlay-hints-mode 1))))
+  (add-to-list 'eglot-stay-out-of 'font-lock))
 
 ;;; Languages
 
@@ -72,10 +71,7 @@
     (add-to-list 'eglot-server-programs
                  '((go-ts-mode go-mod-ts-mode go-work-ts-mode) .
                    ("gopls" :initializationOptions
-                    (:staticcheck t :gofumpt t :usePlaceholders t
-                     :hints (:assignVariableTypes t :compositeLiteralFields t
-                             :constantValues t :functionTypeParameters t
-                             :parameterNames t :rangeVariableTypes t)))))))
+                    (:staticcheck t :gofumpt t))))))
 
 (use-package ruby-ts-mode
   :defer t
@@ -86,7 +82,7 @@
 
 (use-package c-ts-mode
   :defer t
-  :hook ((c-ts-mode c++-ts-mode) . eglot-ensure)) ; Copre entrambe le varianti native
+  :hook ((c-ts-mode c++-ts-mode) . eglot-ensure))
 
 (use-package yaml-ts-mode :defer t :mode "\\.ya?ml\\'")
 (use-package json-ts-mode :defer t :mode "\\.json\\'")

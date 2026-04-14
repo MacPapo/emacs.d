@@ -57,6 +57,9 @@ PALETTE is a let-binding list of color definitions."
         `(icomplete-first-match ((t (:weight bold))))
         `(icomplete-selected-match ((t (:background ,bg-line :foreground ,prompt :weight bold))))
         `(icomplete-section ((t (:slant italic :foreground ,comment))))
+	`(completion-preview ((t (:slant italic :foreground ,comment))))
+        `(completion-preview-common ((t (:weight bold :foreground ,comment))))
+        `(completion-preview-exact ((t (:slant italic :foreground ,prompt))))
 
         ;; --- Core Syntax & Web Mode ---
         `(font-lock-keyword-face ((t (:weight bold :foreground "unspecified"))))
