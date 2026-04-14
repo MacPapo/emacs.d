@@ -50,6 +50,7 @@
    `(region ((t (:background ,region))))
 
    ;; Modeline
+   `(mode-line-buffer-id ((t (:weight bold))))
    `(mode-line ((t (:background ,bg-modeline :foreground ,fg-main
 				:box (:line-width -1 :color ,border :style nil)))))
    `(mode-line-inactive ((t (:background ,bg-modeline-inactive :foreground ,comment
@@ -60,6 +61,11 @@
    `(minibuffer-prompt ((t (:weight bold :foreground ,prompt))))
    `(completions-common-part ((t (:foreground ,string))))
    `(completions-first-difference ((t (:weight bold :foreground ,error))))
+
+   ;; Fido / Icomplete
+   `(icomplete-first-match ((t (:weight bold))))
+   `(icomplete-selected-match ((t (:background ,bg-line :foreground ,prompt :weight bold))))
+   `(icomplete-section ((t (:slant italic :foreground ,comment))))
 
    ;; Syntax: Structure (Monochrome / Typography)
    `(font-lock-keyword-face ((t (:weight bold :foreground "unspecified"))))
@@ -73,6 +79,20 @@
    `(font-lock-constant-face ((t (:foreground ,constant))))
    `(font-lock-comment-face ((t (:slant italic :foreground ,comment))))
    `(font-lock-doc-face ((t (:slant italic :foreground ,comment))))
+
+   ;; Shell & Terminals
+   `(eshell-prompt ((t (:weight bold :foreground ,prompt))))
+   `(comint-highlight-prompt ((t (:weight bold :foreground ,prompt))))
+
+   ;; Tab Bar
+   `(tab-bar ((t (:background ,bg-modeline-inactive :foreground ,comment))))
+   `(tab-bar-tab ((t (:background ,bg-modeline :foreground ,fg-main :weight bold
+				  :box (:line-width -1 :color ,border :style nil)))))
+   `(tab-bar-tab-inactive ((t (:background ,bg-modeline-inactive :foreground ,comment
+					   :box (:line-width -1 :color ,border :style nil)))))
+   `(tab-bar-tab-group-current ((t (:weight bold :foreground ,prompt))))
+   `(tab-bar-tab-group-inactive ((t (:slant italic :foreground ,comment))))
+   `(tab-bar-tab-ungrouped ((t (:foreground ,comment))))
 
    ;; Diagnostics & LSP
    `(error ((t (:foreground ,error :weight bold))))
