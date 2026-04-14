@@ -22,7 +22,7 @@
         (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "v0.23.1")
         (yaml       "https://github.com/ikatyang/tree-sitter-yaml"          "v0.5.0")
         (dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile" "v0.2.0")
-        (c          "https://github.com/tree-sitter/tree-sitter-c"          "v0.24.1")
+        (c          "https://github.com/tree-sitter/tree-sitter-c"          "v0.23.6")
         (cpp        "https://github.com/tree-sitter/tree-sitter-cpp"        "v0.23.4")))
 
 (defun core-treesit-auto-install ()
