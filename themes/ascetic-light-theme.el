@@ -15,18 +15,28 @@
 (deftheme ascetic-light
   "Clarity through renunciation. Syntax is structure; color is signal.")
 
-(let ((bg-main     "#F4F4F1") ; Base background
-      (fg-main     "#333333") ; Base foreground
-      (bg-line     "#E8E8E3") ; Current line highlight
-      (bg-modeline "#E0E0D8") ; Active modeline
-      (comment     "#888888") ; Muted comments
-      (string      "#4B6A3A") ; Forest green
-      (constant    "#4A658A") ; Slate blue
-      (error       "#B34D4C") ; Brick red
-      (warning     "#9B7018") ; Dark gold
-      (prompt      "#2F5B5B") ; Dark teal
-      (region      "#D3DFE8") ; Ice blue
-      (border      "#CCCCCC")) ; Window dividers
+(let (
+      ;; --- Core Architecture ---
+      (bg-main              "#F0EAD6")	; main
+      (fg-main              "#242424")	; lc(main): 90, lc(mod): 85.8
+      (bg-line              "#E6DFCA")
+
+      ;; --- UI Blocks ---
+      (bg-modeline          "#E3EBF2")	; mod
+      (bg-modeline-inactive "#E5E0D5")
+      (border               "#C4C4BC")
+
+      ;; --- Typography & Signals ---
+      (comment              "#585858")	; lc 72.2
+      (warning              "#8B6012")	; lc 68.3
+
+      (string               "#3A592D")	; lc 75
+      (constant             "#36507A")	; lc 75.5
+      (error                "#9E3636")	; lc 70.6
+      (prompt               "#254A4A")	; lc 80
+
+      (region               "#D5E1ED")
+      )
 
   (custom-theme-set-faces
    'ascetic-light
@@ -40,8 +50,11 @@
    `(region ((t (:background ,region))))
 
    ;; Modeline
-   `(mode-line ((t (:background ,bg-modeline :foreground ,fg-main :box nil))))
-   `(mode-line-inactive ((t (:background ,bg-main :foreground ,comment :box nil))))
+   `(mode-line ((t (:background ,bg-modeline :foreground ,fg-main
+				:box (:line-width -1 :color ,border :style nil)))))
+   `(mode-line-inactive ((t (:background ,bg-modeline-inactive :foreground ,comment
+					 :box (:line-width -1 :color ,border :style nil)))))
+   `(vertical-border ((t (:foreground ,border))))
 
    ;; Minibuffer & Completion
    `(minibuffer-prompt ((t (:weight bold :foreground ,prompt))))

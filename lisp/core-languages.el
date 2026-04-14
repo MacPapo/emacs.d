@@ -79,7 +79,10 @@
   :hook ((go-ts-mode . eglot-ensure)
          (go-ts-mode . (lambda ()
                          (add-hook 'before-save-hook #'eglot-format-buffer -10 t)
-                         (add-hook 'before-save-hook #'eglot-code-action-organize-imports t t))))
+                         (add-hook 'before-save-hook (lambda ()
+						       (call-interactively
+							'eglot-code-action-organize-imports))
+				   nil t))))
   :config
   (with-eval-after-load 'eglot
     (add-to-list 'eglot-server-programs

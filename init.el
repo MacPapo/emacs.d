@@ -65,7 +65,7 @@
       ('dark (load-theme 'ascetic-dark t))))
 
   (add-hook 'ns-system-appearance-change-functions #'core/apply-theme)
-  (set-face-attribute 'default nil :family "Atkinson Hyperlegible Mono" :height 145)
+  (set-face-attribute 'default nil :family "Atkinson Hyperlegible Mono" :height 125)
 
   (let ((gls (executable-find "gls")))
     (when gls (setq insert-directory-program gls))))
@@ -110,6 +110,8 @@
 ;; Unclutter inactive elements
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
+
+(use-package hl-line :init (global-hl-line-mode 1))
 
 ;; ==========================================
 ;; 05. CORE EDITING PRIMITIVES
@@ -204,7 +206,6 @@
 ;; 07. MINIBUFFER & NATIVE COMPLETION
 ;; ==========================================
 
-;; Vertico/Ivy native replacement. Delay 0 = instant feedback.
 (fido-vertical-mode 1)
 (setq icomplete-compute-delay 0)
 
