@@ -6,6 +6,7 @@
 ;; License: GNU General Public License version 3 (or later)
 
 ;;; Commentary:
+;;
 ;; A surgical editing module, ultra-fast and dependency-free.
 ;; Combines Vim's determinism (Inner selections) with modern editor
 ;; ergonomics (DWIM, Line moving, Instant surround).

@@ -206,13 +206,32 @@
 ;; 07. MINIBUFFER & NATIVE COMPLETION
 ;; ==========================================
 
-(fido-vertical-mode 1)
-(setq icomplete-compute-delay 0)
+;; (fido-vertical-mode 1)
+;; (setq icomplete-compute-delay 0)
+
+;; Global completion cleanliness
+(setq completion-auto-help nil
+      completions-detailed nil
+      completion-cycle-threshold nil)
 
 (setq completion-ignore-case t
       read-buffer-completion-ignore-case t
       read-file-name-completion-ignore-case t
       read-extended-command-predicate #'command-completion-default-include-p)
+
+;; Search Backend
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides '((file (styles partial-completion)))))
+
+;; UI Engine
+(use-package ascetic-read
+  :ensure nil ; Loaded locally from the lisp/ directory
+  :config
+  (ascetic-read-mode 1))
 
 ;; Shield minibuffer prompt from cursor.
 (setq minibuffer-prompt-properties '(read-only t intangible t cursor-intangible t face minibuffer-prompt))
