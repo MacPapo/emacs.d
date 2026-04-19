@@ -1,7 +1,6 @@
 ;;; ascetic-read.el --- Plan 9 inspired, pure text completion engine -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2026 Jacopo Costantini
-
 ;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
 ;; License: GNU General Public License version 3 (or later)
 
@@ -15,84 +14,79 @@
 ;; 2. Decoupled Signals: Composition (M-1..M-9) mutates state. Execution (RET) commits it.
 ;; 3. Trust the User: Confirmation prompts are considered visual noise.
 ;; 4. Interruptible Flow: UI rendering never blocks keyboard input.
+;; 5. Protocol Obedience: Respects backend metadata (display-sort-function).
 
 ;;; Code:
+
+(require 'seq)
 
 (defgroup ascetic-read nil
   "Plan 9 inspired, pure text completion engine."
   :group 'minibuffer)
 
 (defcustom ascetic-max-candidates 5
-  "Maximum number of candidates to compute and display. (Max 9)"
+  "Maximum number of candidates to compute and display (Max 9)."
   :type 'integer
   :group 'ascetic-read)
 
 (defvar ascetic-input-filter-function #'identity
-  "Filter applied to minibuffer stream before engine evaluation.")
+  "Function filtering the minibuffer stream before engine evaluation.")
 
 ;; Session registers
-(defvar ascetic--collection nil)
-(defvar ascetic--predicate nil)
-(defvar ascetic--require-match nil)
-(defvar ascetic--default nil)
-(defvar ascetic--overlay nil)
-(defvar ascetic--current-candidates nil)
-(defvar ascetic--current-base-size 0)
+(defvar ascetic--collection nil "Session register for the current collection.")
+(defvar ascetic--predicate nil "Session register for the current predicate.")
+(defvar ascetic--require-match nil "Session register for strict match requirements.")
+(defvar ascetic--default nil "Session register for the default value.")
+(defvar ascetic--overlay nil "Session register for the rendering overlay.")
+(defvar ascetic--current-candidates nil "Session register for displayed candidates.")
+(defvar ascetic--current-base-size 0 "Session register for candidate base size.")
+(defvar ascetic--history-hash nil "Session register for pre-computed history O(1) index.")
 
-;; Pure algorithmic core
-
-(defun ascetic--extract-shortest (lst n)
-  "Extract N shortest strings from LST in O(N).
-Maintains order via trailing pointer injection to bypass GC thrashing."
-  (let ((res nil))
-    (while lst
-      (let* ((curr (car lst))
-             (len-curr (length curr)))
-        (cond
-         ((or (null res) (<= len-curr (length (car res))))
-          (setq res (cons curr res))
-          (let ((tail (nthcdr (1- n) res)))
-            (when tail (setcdr tail nil))))
-         ((or (< (length res) n) (<= len-curr (length (car (last res)))))
-          (let ((prev res))
-            (while (and (cdr prev) (< (length (cadr prev)) len-curr))
-              (setq prev (cdr prev)))
-            (setcdr prev (cons curr (cdr prev)))
-            (let ((tail (nthcdr (1- n) res)))
-              (when tail (setcdr tail nil)))))))
-      (setq lst (cdr lst)))
-    res))
-
-(defun ascetic--take-n (lst n)
-  "Extract up to N elements safely from LST."
-  (let ((i n) (res nil))
-    (while (and (> i 0) (consp lst))
-      (push (car lst) res)
-      (setq lst (cdr lst))
-      (setq i (1- i)))
-    (nreverse res)))
-
-;; I/O pipeline and display
+(defun ascetic--smart-sort (completions)
+  "Sort COMPLETIONS using a hybrid engine.
+Priority 1: History (O(1) lookup via session-cached hash table).
+Priority 2: String length (In-place C fallback)."
+  (if (not ascetic--history-hash)
+      ;; Fast path: No history available, fallback to length.
+      (sort completions :key #'length :in-place t)
+    ;; History path: Use pre-computed session index.
+    (sort completions
+          :in-place t
+          :lessp (lambda (c1 c2)
+                   (let ((idx1 (gethash c1 ascetic--history-hash))
+                         (idx2 (gethash c2 ascetic--history-hash)))
+                     (cond
+                      ((and idx1 idx2) (< idx1 idx2)) ;; Both in history, lowest index wins
+                      (idx1 t)                        ;; Only c1 in history
+                      (idx2 nil)                      ;; Only c2 in history
+                      (t (< (length c1) (length c2))))))))) ;; Neither in history, shortest wins
 
 (defun ascetic--update-completions ()
-  "Compute completions synchronously. Aborts immediately on pending input.
-Binds non-essential to prevent blocking I/O (e.g., TRAMP connections)."
+  "Compute completions synchronously and update the overlay.
+Aborts immediately on pending input. Binds `non-essential' to prevent
+blocking I/O (e.g., TRAMP). Suspends Garbage Collection during
+computation to guarantee frame rate."
   (when ascetic--overlay
-    (let* ((raw-content (minibuffer-contents))
+    (let* ((raw-content (minibuffer-contents-no-properties))
            (content (funcall ascetic-input-filter-function raw-content))
-           ;; 'while-no-input' returns evaluated body, or 't' if interrupted.
            (state
             (while-no-input
               (let* ((non-essential t)
+                     (gc-cons-threshold most-positive-fixnum)
                      (completions (completion-all-completions
                                    content ascetic--collection ascetic--predicate (length content)))
+                     (metadata (completion-metadata content ascetic--collection ascetic--predicate))
+                     ;; PROTOCOL: Defer to backend metadata if present, else use our smart sort.
+                     (sort-fn (or (completion-metadata-get metadata 'display-sort-function)
+                                  #'ascetic--smart-sort))
                      (last-cell (last completions))
                      (base-size (if (and last-cell (numberp (cdr last-cell)))
                                     (prog1 (cdr last-cell) (setcdr last-cell nil))
                                   0))
-                     (lst (if (or (string-empty-p content) (not completions))
-                              (ascetic--take-n completions ascetic-max-candidates)
-                            (ascetic--extract-shortest completions ascetic-max-candidates))))
+                     ;; FIX: Never bypass sorting on empty strings to prioritize history.
+                     (lst (if completions
+                              (seq-take (funcall sort-fn completions) ascetic-max-candidates)
+                            nil)))
                 (cons lst base-size)))))
 
       ;; If state is a cons cell, computation finished uninterrupted.
@@ -104,18 +98,11 @@ Binds non-essential to prevent blocking I/O (e.g., TRAMP connections)."
           (move-overlay ascetic--overlay (point-min) (point-max) (current-buffer))
 
           (if lst
-              (let* ((i 0)
-                     (text (concat " \n"
-                                   (mapconcat (lambda (item)
-                                                (setq i (1+ i))
-                                                (format "%d. %s" i item))
-                                              lst "\n"))))
+              (let ((text (concat " \n  " (mapconcat #'identity lst "\n  "))))
                 ;; Inform C display engine to lock cursor before the overlay.
                 (put-text-property 0 1 'cursor t text)
                 (overlay-put ascetic--overlay 'after-string text))
             (overlay-put ascetic--overlay 'after-string "")))))))
-
-;; Interactive routes
 
 (defun ascetic--insert-nth (n)
   "Materialize candidate N into the prompt without executing."
@@ -127,10 +114,18 @@ Binds non-essential to prevent blocking I/O (e.g., TRAMP connections)."
           (insert candidate))
       (minibuffer-message "No candidate %d" (1+ n)))))
 
-(defun ascetic--submit-raw ()
-  "Commit exact prompt state. Validates only if match is strictly mandated."
+(defun ascetic--insert-by-chord ()
+  "Extract digit from the pressed key and materialize the candidate."
   (interactive)
-  (let ((input (minibuffer-contents)))
+  (let ((idx (- (event-basic-type last-command-event) ?1)))
+    (ascetic--insert-nth idx)))
+
+(defun ascetic--submit-raw ()
+  "Commit exact prompt state.
+Validates only if `ascetic--require-match' is strictly t.
+Confirmation prompts (e.g. `confirm') are bypassed by design."
+  (interactive)
+  (let ((input (minibuffer-contents-no-properties)))
     (cond
      ((and (string-empty-p input) ascetic--default) (exit-minibuffer))
      ((eq ascetic--require-match t)
@@ -140,7 +135,7 @@ Binds non-essential to prevent blocking I/O (e.g., TRAMP connections)."
      (t (exit-minibuffer)))))
 
 (defun ascetic--submit-first ()
-  "Fast path execution: immediately commit the top candidate."
+  "Commit the top candidate immediately."
   (interactive)
   (if ascetic--current-candidates
       (let ((candidate (car ascetic--current-candidates)))
@@ -148,8 +143,6 @@ Binds non-essential to prevent blocking I/O (e.g., TRAMP connections)."
         (insert candidate)
         (exit-minibuffer))
     (ascetic--submit-raw)))
-
-;; Routing map
 
 (defvar ascetic-minibuffer-map
   (let ((map (make-sparse-keymap)))
@@ -168,26 +161,39 @@ Binds non-essential to prevent blocking I/O (e.g., TRAMP connections)."
     (define-key map (kbd "M-RET") #'ascetic--submit-first)
 
     (dotimes (i (min ascetic-max-candidates 9))
-      (let ((key (format "M-%d" (1+ i)))
-            (idx i))
-        (define-key map (kbd key)
-		    (lambda () (interactive) (ascetic--insert-nth idx)))))
+      (define-key map (kbd (format "M-%d" (1+ i))) #'ascetic--insert-by-chord))
     map)
   "Keymap mapping structural intent over visual navigation.")
-
-;; Environment setup
 
 (defun ascetic--minibuffer-setup ()
   "Initialize stream context and attach visual display hook."
   (make-local-variable 'ascetic--overlay)
   (make-local-variable 'ascetic--current-candidates)
   (make-local-variable 'ascetic--current-base-size)
+  (make-local-variable 'ascetic--history-hash)
+
   (setq ascetic--overlay (make-overlay (point-min) (point-max) (current-buffer)))
+
+  ;; Pre-compute O(1) history index purely once per minibuffer session.
+  (let* ((hist-var minibuffer-history-variable)
+         (hist-list (when (and hist-var (boundp hist-var))
+                      (symbol-value hist-var))))
+    (when hist-list
+      (setq ascetic--history-hash (make-hash-table :test 'equal :size (length hist-list)))
+      (let ((idx 0))
+        (dolist (item hist-list)
+          (unless (gethash item ascetic--history-hash)
+            (puthash item idx ascetic--history-hash)
+            (setq idx (1+ idx)))))))
+
   (add-hook 'post-command-hook #'ascetic--update-completions nil t))
 
 (defun ascetic-completing-read (prompt collection &optional predicate require-match
-                                       initial-input hist def inherit-input-method)
-  "Main entry point: intercept standard minibuffer read."
+                                       initial-input hist def _inherit-input-method)
+  "Intercept standard minibuffer read given PROMPT and COLLECTION.
+PREDICATE limits the candidates. REQUIRE-MATCH enforces strict matches;
+values like `confirm' are intentionally treated as nil to reduce noise.
+INITIAL-INPUT, HIST, DEF, and INHERIT-INPUT-METHOD follow standard semantics."
   (let ((ascetic--collection collection)
         (ascetic--predicate predicate)
         (ascetic--require-match require-match)
