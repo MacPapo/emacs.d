@@ -144,6 +144,28 @@ Confirmation prompts (e.g. `confirm') are bypassed by design."
         (exit-minibuffer))
     (ascetic--submit-raw)))
 
+(defun ascetic--expand-lcp ()
+  "Brutally replace current input with the LCP provided by the system's completion engine."
+  (interactive)
+  (let* ((input (minibuffer-contents-no-properties))
+         (start-pos (minibuffer-prompt-end))
+         ;; Chiediamo al sistema: "Qual è la tua miglior espansione per questo input?"
+         (try (completion-try-completion
+               input
+               ascetic--collection
+               ascetic--predicate
+               (- (point) start-pos))))
+    (if (consp try)
+        (let ((new-text (car try))
+              (new-pos (cdr try)))
+          ;; Se il sistema suggerisce qualcosa di più lungo, sostituiamo
+          (unless (string= input new-text)
+            (delete-region start-pos (point-max))
+            (insert new-text)
+            ;; Posizioniamo il cursore dove il sistema suggerisce
+            (goto-char (+ start-pos new-pos))))
+      (minibuffer-message "No further expansion possible"))))
+
 (defvar ascetic-minibuffer-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map minibuffer-local-map)
@@ -151,7 +173,9 @@ Confirmation prompts (e.g. `confirm') are bypassed by design."
     (define-key map (kbd "C-p") #'ignore)
     (define-key map (kbd "<down>") #'ignore)
     (define-key map (kbd "<up>") #'ignore)
-    (define-key map (kbd "TAB") #'ignore)
+
+    ;; INJECTED THE BRUTAL LCP EXPANSION
+    (define-key map (kbd "TAB") #'ascetic--expand-lcp)
 
     (define-key map (kbd "M-p") #'previous-history-element)
     (define-key map (kbd "M-n") #'next-history-element)
