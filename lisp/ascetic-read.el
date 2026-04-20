@@ -35,6 +35,16 @@
 ;;     :load-path "path/to/ascetic-read"
 ;;     :config
 ;;     (ascetic-read-mode 1))
+;;
+;; ASYNC BACKENDS (e.g., Consult)
+;; ascetic-read provides an explicit API for asynchronous backend refreshes.
+;; It does not hardcode third-party packages. If you use async search tools
+;; like Consult, wire their refresh hook to our exposed trigger in your init.el:
+;;
+;;   (use-package consult
+;;     :config
+;;     (add-hook 'consult--completion-refresh-hook #'ascetic-read-refresh))
+;;
 
 ;;; Code:
 
@@ -136,6 +146,14 @@ Ensure early redisplay and avert Tramp deadlocks."
                   (overlay-put ascetic--overlay 'after-string text))
               (overlay-put ascetic--overlay 'after-string ""))))))))
 
+(defun ascetic-read-refresh ()
+  "Force a synchronous refresh of the completion overlay.
+External async backends (e.g., background search processes)
+should call this function when new candidates are available."
+  (interactive)
+  (when (and ascetic--overlay (minibufferp))
+    (ascetic--update-completions)))
+
 (defun ascetic--insert-nth (n)
   "Materialize candidate N into the prompt without executing."
   (interactive)
@@ -195,7 +213,7 @@ Ensure early redisplay and avert Tramp deadlocks."
 
 (defvar ascetic-minibuffer-map
   (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map minibuffer-local-map)
+    (set-keymap-parent map minibuffer-local-completion-map)
     (define-key map (kbd "C-n") #'ignore)
     (define-key map (kbd "C-p") #'ignore)
     (define-key map (kbd "<down>") #'ignore)

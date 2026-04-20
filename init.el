@@ -221,6 +221,11 @@
   :config
   (ascetic-read-mode 1))
 
+(use-package consult
+  :ensure t
+  :config
+  (add-hook 'consult--completion-refresh-hook #'ascetic-read-refresh))
+
 ;; Shield minibuffer prompt from cursor.
 (setq minibuffer-prompt-properties '(read-only t intangible t cursor-intangible t face minibuffer-prompt))
 (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
