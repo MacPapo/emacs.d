@@ -213,19 +213,23 @@ should call this function when new candidates are available."
 
 (defvar ascetic-minibuffer-map
   (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map minibuffer-local-completion-map)
+    (set-keymap-parent map minibuffer-local-map)
+
     (define-key map (kbd "C-n") #'ignore)
     (define-key map (kbd "C-p") #'ignore)
     (define-key map (kbd "<down>") #'ignore)
     (define-key map (kbd "<up>") #'ignore)
+
+    (define-key map (kbd "SPC") #'self-insert-command)
+    (define-key map (kbd "?")   #'self-insert-command)
 
     (define-key map (kbd "TAB") #'ascetic--expand-lcp)
 
     (define-key map (kbd "M-p") #'previous-history-element)
     (define-key map (kbd "M-n") #'next-history-element)
 
-    (define-key map (kbd "RET") #'ascetic--submit-raw)
-    (define-key map (kbd "C-j") #'ascetic--submit-raw)
+    (define-key map (kbd "RET")   #'ascetic--submit-raw)
+    (define-key map (kbd "C-j")   #'ascetic--submit-raw)
     (define-key map (kbd "M-RET") #'ascetic--submit-first)
 
     (dotimes (i (min ascetic-max-candidates 9))
