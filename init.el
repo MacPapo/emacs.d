@@ -221,6 +221,13 @@
   :config
   (ascetic-read-mode 1))
 
+(use-package ascetic-plumber
+  :ensure nil
+  :after ascetic-read
+  :bind (:map ascetic-minibuffer-map
+              ("RET" . ascetic-plumber-commit)
+              ("C-j" . ascetic-plumber-commit)))
+
 (use-package consult
   :ensure t
   :config
