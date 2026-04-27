@@ -164,6 +164,8 @@
     (define-key map (kbd "TAB") #'ascetic--expand-lcp)
     (define-key map (kbd "RET") #'ascetic--submit-raw)
     (define-key map (kbd "M-RET") #'ascetic--submit-first)
+    (define-key map (kbd "M-j") #'ascetic--submit-first)
+
     (dotimes (i (min ascetic-max-candidates 9))
       (define-key map (kbd (format "M-%d" (1+ i))) #'ascetic--insert-by-chord))
     map)

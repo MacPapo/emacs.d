@@ -62,11 +62,11 @@ PALETTE is a let-binding list of color definitions."
         `(completion-preview-exact ((t (:slant italic :foreground ,prompt))))
 
         ;; --- Core Syntax & Web Mode ---
-        `(font-lock-keyword-face ((t (:weight bold :foreground "unspecified"))))
-        `(font-lock-type-face ((t (:weight bold :foreground "unspecified"))))
-        `(font-lock-function-name-face ((t (:weight bold :foreground "unspecified"))))
-        `(font-lock-variable-name-face ((t (:foreground "unspecified"))))
-        `(font-lock-builtin-face ((t (:slant italic :foreground "unspecified"))))
+        `(font-lock-keyword-face ((t (:weight bold :foreground unspecified))))
+        `(font-lock-type-face ((t (:weight bold :foreground unspecified))))
+        `(font-lock-function-name-face ((t (:weight bold :foreground unspecified))))
+        `(font-lock-variable-name-face ((t (:foreground unspecified))))
+        `(font-lock-builtin-face ((t (:slant italic :foreground unspecified))))
         `(font-lock-string-face ((t (:foreground ,string))))
         `(font-lock-constant-face ((t (:foreground ,constant))))
         `(font-lock-comment-face ((t (:slant italic :foreground ,comment))))
