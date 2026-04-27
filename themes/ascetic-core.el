@@ -100,5 +100,13 @@ PALETTE is a let-binding list of color definitions."
                     (file-name-as-directory (file-name-directory load-file-name))))
      (provide-theme ',theme-name)))
 
+(defun ascetic-toggle-theme ()
+  "Toggle between `ascetic-light' and `ascetic-dark' themes.
+Defaults to `ascetic-dark' if neither is currently active."
+  (interactive)
+  (let ((is-dark (memq 'ascetic-dark custom-enabled-themes)))
+    (mapc #'disable-theme custom-enabled-themes)
+    (load-theme (if is-dark 'ascetic-light 'ascetic-dark) t)))
+
 (provide 'ascetic-core)
 ;;; ascetic-core.el ends here
