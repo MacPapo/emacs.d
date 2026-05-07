@@ -45,18 +45,6 @@
         mac-option-modifier 'none
         ns-use-native-fullscreen t)
 
-  ;; Direct PATH injection. Avoids spawning slow sub-shells.
-  (let ((my-paths '("/opt/homebrew/bin"
-                    "/opt/homebrew/sbin"
-                    "~/.rbenv/shims"
-                    "~/go/bin"
-		    "~/.nvm/versions/node/v24.14.1/bin"
-                    "/usr/local/bin"
-                    "/usr/bin"
-                    "/bin")))
-    (setq exec-path (append (mapcar #'expand-file-name my-paths) exec-path))
-    (setenv "PATH" (mapconcat #'identity exec-path ":")))
-
   (defun core/apply-theme (appearance)
     "Dynamic theme switching based on OS appearance."
     (mapc #'disable-theme custom-enabled-themes)
