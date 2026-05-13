@@ -138,40 +138,40 @@ without polluting the global `minibuffer-setup-hook`.")
                                  (ascetic--remote-p default-directory))))
              (compute-engine
               (lambda ()
-                (let* ((non-essential t)
-                       (gc-cons-threshold (* 64 1024 1024))
-                       (completions (completion-all-completions
-                                     content ascetic--collection ascetic--predicate (length content)))
-                       (last-cell (last completions))
-                       (base-size (if (and last-cell (numberp (cdr last-cell)))
-                                      (prog1 (cdr last-cell) (setcdr last-cell nil))
-                                    0))
-                       ;; Note: Internal Emacs API `completion-pcm--filename-try-filter`.
-                       ;; Subject to change, but highly optimized for file ignoring.
-                       (filtered (if (and completions (eq category 'file))
-                                     (completion-pcm--filename-try-filter completions)
-                                   completions))
-                       (sort-fn (or (completion-metadata-get metadata 'display-sort-function)
-                                    #'ascetic--smart-sort))
-                       (lst (when filtered
-                              (take ascetic-max-candidates (funcall sort-fn filtered)))))
-                  (cons lst base-size))))
+		(let ((non-essential t)
+                      (gc-cons-threshold (* 64 1024 1024)))
+                  (let* ((completions (completion-all-completions
+				       content ascetic--collection ascetic--predicate (length content)))
+			 (last-cell (last completions))
+			 (base-size (if (and last-cell (numberp (cdr last-cell)))
+					(prog1 (cdr last-cell) (setcdr last-cell nil))
+				      0))
+			 ;; Note: Internal Emacs API `completion-pcm--filename-try-filter`.
+			 ;; Subject to change, but highly optimized for file ignoring.
+			 (filtered (if (and completions (eq category 'file))
+				       (completion-pcm--filename-try-filter completions)
+                                     completions))
+			 (sort-fn (or (completion-metadata-get metadata 'display-sort-function)
+				      #'ascetic--smart-sort))
+			 (lst (when filtered
+				(take ascetic-max-candidates (funcall sort-fn filtered)))))
+                    (cons lst base-size)))))
              (state (if is-remote
                         (funcall compute-engine)
                       (while-no-input (funcall compute-engine)))))
         (when (consp state)
           (let ((lst (car state))
                 (base-size (cdr state)))
-            (setq ascetic--current-candidates lst)
-            (setq ascetic--current-base-size base-size)
-            (if lst
-                (let ((text (concat " \n  " (mapconcat #'identity lst "\n  "))))
+	    (setq ascetic--current-candidates lst)
+	    (setq ascetic--current-base-size base-size)
+	    (if lst
+                (let ((text (concat " \n  " (mapconcat #'completion-lazy-hilit lst "\n  "))))
                   ;; Anchor the cursor exactly on the first space of the overlay.
                   ;; Since updates are now synchronous, this guarantees zero visual flicker,
                   ;; though behavior with variable-pitch fonts/scaling should be monitored.
                   (put-text-property 0 1 'cursor t text)
                   (overlay-put ascetic--overlay 'after-string text))
-              (overlay-put ascetic--overlay 'after-string ""))))))))
+	      (overlay-put ascetic--overlay 'after-string ""))))))))
 
 (defun ascetic--on-change (&rest _)
   "Trigger for overlay updates via `after-change-functions'."
