@@ -190,11 +190,9 @@
 (use-package executable
   :hook (after-save . executable-make-buffer-file-executable-if-script-p))
 
-;; ==========================================
-;; 07. MINIBUFFER & NATIVE COMPLETION
-;; ==========================================
+;;; buffer completion
 
-(setq completion-styles '(basic partial-completion substring)
+(setq completion-styles '(basic substring partial-completion flex)
       completion-auto-help nil
       completions-detailed nil
       completion-cycle-threshold nil)
@@ -204,6 +202,10 @@
       read-file-name-completion-ignore-case t
       read-extended-command-predicate #'command-completion-default-include-p)
 
+;; Shield minibuffer prompt from cursor.
+(setq minibuffer-prompt-properties '(read-only t intangible t cursor-intangible t face minibuffer-prompt))
+(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+
 (use-package ascetic-read
   :ensure nil
   :config
@@ -211,19 +213,14 @@
 
 (use-package ascetic-plumber
   :ensure nil
-  :after ascetic-read
-  :bind (:map ascetic-minibuffer-map
-              ("RET" . ascetic-plumber-commit)
-              ("C-j" . ascetic-plumber-commit)))
+  :after ascetic-read)
 
 (use-package consult
   :ensure t
   :config
   (add-hook 'consult--completion-refresh-hook #'ascetic-read-refresh))
 
-;; Shield minibuffer prompt from cursor.
-(setq minibuffer-prompt-properties '(read-only t intangible t cursor-intangible t face minibuffer-prompt))
-(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
+;;; in-buffer completion
 
 (use-package completion-preview
   :init (global-completion-preview-mode 1)
@@ -256,15 +253,16 @@
       window-combination-resize t
       help-window-select t)
 
-;; Deterministic bottom-drawer placements for system buffers.
 (use-package window
+  :ensure nil
   :custom
   (display-buffer-alist
    '(("\\*\\(Help\\|Apropos\\|info\\|Messages\\|Warnings\\|Compile-Log\\)\\*"
       (display-buffer-reuse-window display-buffer-at-bottom)
       (window-height . 0.3)
       (reusable-frames . visible))
-     ("\\*compilation\\*"
+     ;; Cattura *compilation*, ma anche *Plumber Stream* e *Plumber: ...*
+     ("\\*\\(compilation\\|Plumber.*\\)\\*"
       (display-buffer-reuse-window display-buffer-at-bottom)
       (window-height . 0.3)
       (reusable-frames . visible))

@@ -1,16 +1,34 @@
 ;;; ascetic-plumber.el --- Plan 9 inspired completion routing -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2026 Jacopo Costantini
+
 ;; Author: Jacopo Costantini <jacopocostantini32@gmail.com>
-;; License: GNU General Public License version 3 (or later)
+;; Package-Requires: ((emacs "30.0"))
+
+;; GNU Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; GNU Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
+
 ;; Pure router for Emacs completions.
-;; Routes candidate streams to stdin of processes or lisp sinks.
+;; Routes candidate streams to stdin of processes or Lisp sinks,
+;; decoupling the selection mechanism from the final action.
+;;
+;; Automatically integrates with `ascetic-read` if loaded, using
+;; `ascetic-read-setup-hook` to avoid polluting the global minibuffer
+;; environment.
 
 ;;; Code:
-
-(require 'compile)
 
 (defgroup ascetic-plumber nil
   "Plan 9 inspired completion routing."
@@ -28,17 +46,34 @@
   :type '(alist :key-type symbol :value-type alist)
   :group 'ascetic-plumber)
 
-(defcustom ascetic-plumber-operator-export " > " "Export to Lisp UI."    :type 'string)
-(defcustom ascetic-plumber-operator-insert " < " "Insert raw text."     :type 'string)
-(defcustom ascetic-plumber-operator-bang   " ! " "Async shell pipe."    :type 'string)
-(defcustom ascetic-plumber-operator-pipe   " | " "Sync shell pipe."     :type 'string)
+(defcustom ascetic-plumber-operator-export " > "
+  "Operator string to export to Lisp UI."
+  :type 'string
+  :group 'ascetic-plumber)
+
+(defcustom ascetic-plumber-operator-insert " < "
+  "Operator string to insert raw text."
+  :type 'string
+  :group 'ascetic-plumber)
+
+(defcustom ascetic-plumber-operator-bang " ! "
+  "Operator string for asynchronous shell pipes."
+  :type 'string
+  :group 'ascetic-plumber)
+
+(defcustom ascetic-plumber-operator-pipe " | "
+  "Operator string for synchronous shell pipes."
+  :type 'string
+  :group 'ascetic-plumber)
 
 (defun ascetic-plumber-action-insert (_cmd candidates _category)
-  "Insert CANDIDATES as raw text."
+  "Insert CANDIDATES into the buffer as raw text.
+Arguments _CMD and _CATEGORY are ignored."
   (insert (mapconcat #'identity candidates " ")))
 
 (defun ascetic-plumber-action-print (_cmd candidates _category)
-  "Dump CANDIDATES into a stream buffer."
+  "Dump CANDIDATES into a dedicated stream buffer.
+Arguments _CMD and _CATEGORY are ignored."
   (let ((buf (get-buffer-create "*Plumber Stream*")))
     (with-current-buffer buf
       (erase-buffer)
@@ -46,34 +81,47 @@
     (display-buffer buf)))
 
 (defun ascetic-plumber-action-dired (_cmd candidates _category)
-  "Materialize file CANDIDATES into Dired."
+  "Materialize file CANDIDATES into a Dired buffer.
+Arguments _CMD and _CATEGORY are ignored."
   (dired (cons default-directory candidates)))
 
 (defun ascetic-plumber-action-ibuffer (_cmd candidates _category)
-  "Materialize buffer CANDIDATES into Ibuffer."
+  "Materialize buffer CANDIDATES into an Ibuffer window.
+Arguments _CMD and _CATEGORY are ignored."
   (ibuffer nil "*Plumber Buffers*" (list (cons 'name (regexp-opt candidates)))))
 
 (defun ascetic-plumber-action-kill-buffers (cmd candidates _category)
-  "Kill CANDIDATES buffers if CMD is 'kill'."
+  "Kill CANDIDATES buffers if CMD is 'kill'.
+Argument _CATEGORY is ignored."
   (if (string= (string-trim cmd) "kill")
       (progn (mapc #'kill-buffer candidates)
              (message "Ascetic Plumber: Killed %d buffers." (length candidates)))
     (user-error "Ascetic Plumber: Unknown buffer command '%s'" cmd)))
 
 (defun ascetic-plumber-action-shell-async (cmd candidates _category)
-  "Stream CANDIDATES to CMD via STDIN asynchronously."
+  "Stream CANDIDATES to CMD via STDIN asynchronously.
+Creates a dedicated output buffer.  Argument _CATEGORY is ignored."
   (when (not (string-empty-p cmd))
     (let* ((clean-cmd (string-trim cmd))
            (buf-name (format "*Plumber: %s*" clean-cmd))
-           (input-data (concat (mapconcat #'identity candidates "\n") "\n")))
-      (let* ((comp-buf (compilation-start clean-cmd t (lambda (_) buf-name)))
-             (proc (get-buffer-process comp-buf)))
+           (input-data (concat (mapconcat #'identity candidates "\n") "\n"))
+           (buf (get-buffer-create buf-name)))
+      (with-current-buffer buf
+        (erase-buffer))
+      (let ((proc (make-process
+                   :name "ascetic-plumber"
+                   :buffer buf
+                   :command (list shell-file-name shell-command-switch clean-cmd)
+                   :connection-type 'pipe)))
         (when proc
           (process-send-string proc input-data)
-          (process-send-eof proc))))))
+          (process-send-eof proc)
+          (display-buffer buf))))))
 
 (defun ascetic-plumber-action-shell-sync (cmd candidates _category)
-  "Stream CANDIDATES to CMD via STDIN synchronously."
+  "Stream CANDIDATES to CMD via STDIN synchronously.
+Inserts the command output into the current buffer.
+Argument _CATEGORY is ignored."
   (when (not (string-empty-p cmd))
     (let ((clean-cmd (string-trim cmd))
           (input-data (concat (mapconcat #'identity candidates "\n") "\n"))
@@ -86,20 +134,25 @@
             (insert output)))))))
 
 (defun ascetic-plumber--parse-input (input)
-  "Parse INPUT based on declared operators."
+  "Parse INPUT string based on declared operators.
+Returns a list of (operator query command).
+Matches the rightmost operator to prevent paths with embedded operators
+from triggering false positives."
   (let* ((ops (list ascetic-plumber-operator-export
                     ascetic-plumber-operator-insert
                     ascetic-plumber-operator-bang
                     ascetic-plumber-operator-pipe))
-         (lexer-rx (concat "\\(" (mapconcat #'regexp-quote ops "\\|") "\\)")))
+         ;; Regex matches: (greedy everything)(operator)(everything to end)
+         (lexer-rx (concat "\\(.*\\)\\(" (mapconcat #'regexp-quote ops "\\|") "\\)\\(.*\\)\\'")))
     (if (string-match lexer-rx input)
-        (list (match-string 1 input)
-              (substring input 0 (match-beginning 0))
-              (substring input (match-end 0)))
+        (list (match-string 2 input)
+              (match-string 1 input)
+              (match-string 3 input))
       nil)))
 
 (defun ascetic-plumber--harvest (query)
-  "Extract truth from native completion metadata for QUERY."
+  "Extract truth from native completion metadata for QUERY.
+Returns a list containing the category, base string, and candidates."
   (let* ((metadata (completion-metadata query minibuffer-completion-table minibuffer-completion-predicate))
          (category (completion-metadata-get metadata 'category))
          (raw      (completion-all-completions query minibuffer-completion-table minibuffer-completion-predicate (length query)))
@@ -111,17 +164,18 @@
           (mapcar #'substring-no-properties raw))))
 
 (defun ascetic-plumber-commit ()
-  "Hijack RET, parse intent, and dispatch to sinks."
+  "Hijack RET, parse intent, and dispatch to appropriate sinks.
+If no operator is matched, soft-fallbacks to native completion exit."
   (interactive)
   (let* ((content (minibuffer-contents-no-properties))
          (plumb   (ascetic-plumber--parse-input content)))
     (if (not plumb)
         (if (fboundp 'ascetic--submit-raw)
-            (ascetic--submit-raw)
+            (funcall 'ascetic--submit-raw)
           (exit-minibuffer))
-      (let* ((operator   (string-trim (car plumb)))
-             (query      (string-trim (cadr plumb)))
-             (cmd        (string-trim (caddr plumb)))
+      (let* ((operator   (string-trim (nth 0 plumb)))
+             (query      (string-trim (nth 1 plumb)))
+             (cmd        (string-trim (nth 2 plumb)))
              (harvested  (ascetic-plumber--harvest query))
              (category   (nth 0 harvested))
              (base-str   (nth 1 harvested))
@@ -134,25 +188,26 @@
              (target-buf (window-buffer (minibuffer-selected-window))))
         (unless sink-fn
           (user-error "No action mapped for category '%s' and operator '%s'" category operator))
-        (run-at-time 0 nil (lambda ()
-                             (let ((default-directory ctx-dir))
-                               (with-current-buffer target-buf
-                                 (funcall sink-fn cmd candidates category)))))
+        ;; Dispatch action asynchronously to break out of the minibuffer jail
+        (run-at-time 0 nil
+                     (lambda (dir buf fn c cand cat)
+                       (condition-case err
+                           (let ((default-directory dir))
+                             (with-current-buffer buf
+                               (funcall fn c cand cat)))
+                         (error (message "Ascetic Plumber Error: %s" (error-message-string err)))))
+                     ctx-dir target-buf sink-fn cmd candidates category)
         (abort-recursive-edit)))))
 
 ;; --- Integration ---
 
 (defun ascetic-plumber-setup-bindings ()
-  "Bind plumber routing to minibuffer RET."
-  (let ((map (if (boundp 'ascetic-minibuffer-map)
-                 ascetic-minibuffer-map
-               minibuffer-local-map)))
-    (define-key map (kbd "RET") #'ascetic-plumber-commit)))
+  "Bind plumber routing to minibuffer RET.
+Safe to use inside `ascetic-read-setup-hook`."
+  (local-set-key (kbd "RET") #'ascetic-plumber-commit))
 
 (with-eval-after-load 'ascetic-read
-  (ascetic-plumber-setup-bindings))
-
-(add-hook 'minibuffer-setup-hook #'ascetic-plumber-setup-bindings)
+  (add-hook 'ascetic-read-setup-hook #'ascetic-plumber-setup-bindings))
 
 (provide 'ascetic-plumber)
 ;;; ascetic-plumber.el ends here
