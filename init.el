@@ -12,9 +12,7 @@
 
 ;;; Code:
 
-;; ==========================================
-;; 01. BOOTSTRAP & ENGINE
-;; ==========================================
+;;; BOOTSTRAP & ENGINE
 
 (prefer-coding-system 'utf-8)
 
@@ -34,33 +32,7 @@
 ;; Network timeout avoidance.
 (setq ffap-machine-p-known 'reject)
 
-;; ==========================================
-;; 02. ENVIRONMENT & MACOS INTEGRATION
-;; ==========================================
-
-(set-face-attribute 'default nil :family "Atkinson Hyperlegible Mono" :height 110)
-
-(when (eq system-type 'darwin)
-  (setq mac-command-modifier 'meta
-        mac-option-modifier 'none
-        ns-use-native-fullscreen t)
-
-  (defun core/apply-theme (appearance)
-    "Dynamic theme switching based on OS appearance."
-    (mapc #'disable-theme custom-enabled-themes)
-    (pcase appearance
-      ('light (load-theme 'ascetic-light t))
-      ('dark (load-theme 'ascetic-dark t))))
-
-  (add-hook 'ns-system-appearance-change-functions #'core/apply-theme)
-  (set-face-attribute 'default nil :family "Atkinson Hyperlegible Mono" :height 125)
-
-  (let ((gls (executable-find "gls")))
-    (when gls (setq insert-directory-program gls))))
-
-;; ==========================================
-;; 03. PACKAGE & MODULE LOADER
-;; ==========================================
+;;; PACKAGE & MODULE LOADER
 
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -68,24 +40,26 @@
 (unless package-archive-contents (package-refresh-contents))
 
 ;; Load external core modules & secrets
+(let ((local-file (expand-file-name "local.el" user-emacs-directory)))
+  (when (file-exists-p local-file)
+    (load local-file nil t)))
+
 (let ((secrets-file (expand-file-name "secrets.el" user-emacs-directory)))
   (when (file-exists-p secrets-file)
     (load secrets-file nil t)))
 
+(setq custom-safe-themes t)
 (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 (add-to-list 'custom-theme-load-path (expand-file-name "themes" user-emacs-directory))
+
+(load-theme 'ascetic-light t t)
+(load-theme 'ascetic-dark t)
 
 (require 'core-editing)
 (require 'core-languages)
 
-(unless (and (eq system-type 'darwin) (display-graphic-p))
-  (load-theme 'ascetic-dark t))
+;;; UI & MONOCHROME PHILOSOPHY
 
-;; ==========================================
-;; 04. UI & MONOCHROME PHILOSOPHY
-;; ==========================================
-
-;; Strip chrome
 (setq inhibit-startup-screen t
       inhibit-startup-message t
       initial-scratch-message ";; Happy Hacking!\n\n"
@@ -95,15 +69,12 @@
       ring-bell-function #'ignore
       use-dialog-box nil)
 
-;; Unclutter inactive elements
 (setq-default cursor-in-non-selected-windows nil)
 (setq highlight-nonselected-windows nil)
 
 (use-package hl-line :init (global-hl-line-mode 1))
 
-;; ==========================================
-;; 05. CORE EDITING PRIMITIVES
-;; ==========================================
+;;; CORE EDITING PRIMITIVES
 
 ;; Clipboard rules
 (setq save-interprogram-paste-before-kill t
@@ -142,16 +113,24 @@
   (repeat-exit-timeout 3)
   (repeat-exit-key (kbd "RET")))
 
-;; ==========================================
-;; 06. FILESYSTEM & I/O
-;; ==========================================
+;;; FILESYSTEM & I/O
+
+(defvar core-state-dir (expand-file-name "var/" user-emacs-directory))
+(unless (file-exists-p core-state-dir)
+  (make-directory core-state-dir t))
+
+(setq save-place-file (expand-file-name "places" core-state-dir)
+      recentf-save-file (expand-file-name "recentf" core-state-dir)
+      savehist-file (expand-file-name "history" core-state-dir)
+      bookmark-default-file (expand-file-name "bookmarks" core-state-dir)
+      project-list-file (expand-file-name "projects" core-state-dir)
+      tramp-persistency-file-name (expand-file-name "tramp" core-state-dir))
 
 ;; Disable symlink lockfiles (.#file) - fatal for web bundlers
 (setq create-lockfiles nil)
 
-;; Isolate backups to ~/.emacs.d
-(setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backups")))
-      auto-save-file-name-transforms `((".*" ,(concat user-emacs-directory "auto-save-list/") t)))
+(setq backup-directory-alist `(("." . ,(concat core-state-dir "backups")))
+      auto-save-file-name-transforms `((".*" ,(concat core-state-dir "auto-save-list/") t)))
 
 ;; History tracking
 (savehist-mode 1)
@@ -207,18 +186,11 @@
 (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
 (use-package ascetic-read
-  :ensure nil
   :config
   (ascetic-read-mode 1))
 
 (use-package ascetic-plumber
-  :ensure nil
   :after ascetic-read)
-
-(use-package consult
-  :ensure t
-  :config
-  (add-hook 'consult--completion-refresh-hook #'ascetic-read-refresh))
 
 ;;; in-buffer completion
 
@@ -242,9 +214,7 @@
           try-complete-file-name-partially
           try-complete-file-name)))
 
-;; ==========================================
-;; 08. WINDOWS & WORKSPACES
-;; ==========================================
+;;; WINDOWS & WORKSPACES
 
 (windmove-default-keybindings)
 (use-package winner :config (winner-mode 1))
@@ -254,7 +224,6 @@
       help-window-select t)
 
 (use-package window
-  :ensure nil
   :custom
   (display-buffer-alist
    '(("\\*\\(Help\\|Apropos\\|info\\|Messages\\|Warnings\\|Compile-Log\\)\\*"
@@ -288,6 +257,7 @@
 (use-package ediff
   :defer t
   :custom
+  (ediff-diff-options "-w")
   (ediff-window-setup-function 'ediff-setup-windows-plain)
   (ediff-split-window-function 'split-window-horizontally))
 
@@ -297,9 +267,7 @@
   (ibuffer-expert t)
   (ibuffer-show-empty-filter-groups nil))
 
-;; ==========================================
-;; 09. DEV TOOLS & WORKFLOW
-;; ==========================================
+;;; DEV TOOLS & WORKFLOW
 
 (use-package display-line-numbers
   :hook (prog-mode . display-line-numbers-mode)
@@ -349,12 +317,8 @@
   (setq vc-follow-symlinks t
         vc-git-diff-switches '("--histogram")))
 
-;; ==========================================
-;; 10. EMACS CUSTOM GENERATED
-;; ==========================================
-
 ;; Loaded last to ensure system modifications don't override manual config.
-(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(setq custom-file (expand-file-name "custom.el" core-state-dir))
 (when (file-exists-p custom-file)
   (load custom-file nil t))
 

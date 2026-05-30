@@ -31,3 +31,5 @@ places
 games/
 eshell/
 .DS_Store
+local.el
+var/

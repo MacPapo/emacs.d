@@ -46,43 +46,75 @@
 ;;; LSP (Eglot)
 
 (use-package eglot
+  :hook ((go-ts-mode              . eglot-ensure)
+	 (ruby-ts-mode            . eglot-ensure)
+	 ((c-ts-mode c++-ts-mode) . eglot-ensure))
   :custom
   (eglot-autoshutdown t)
   (eglot-sync-connect 0)
   (eglot-extend-to-xref t)
   (eglot-send-changes-idle-time 0.1)
+  (eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider))
   :config
   (fset #'jsonrpc--log-event #'ignore)
-  (add-to-list 'eglot-stay-out-of 'font-lock))
+  (add-to-list 'eglot-stay-out-of 'font-lock)
+
+  ;; C/C++
+  (add-to-list 'eglot-server-programs
+               '((c-ts-mode c++-ts-mode)
+                 . ("clangd"
+                    "--background-index"
+                    "--pch-storage=memory"
+                    "--clang-tidy"
+                    "--header-insertion=iwyu"
+                    "--completion-style=bundled"
+		    "--fallback-style=LLVM")))
+
+  ;; GO
+  (add-to-list 'eglot-server-programs
+               '((go-ts-mode go-mod-ts-mode go-work-ts-mode)
+		 . ("gopls"
+		    :initializationOptions
+                    (:staticcheck t :gofumpt t))))
+  ;; RUBY
+  (add-to-list 'eglot-server-programs
+	       '((ruby-mode ruby-ts-mode)
+		 . "ruby-lsp"))
+
+  )
+
+;;; Shared Styles
+
+(defun core-apply-pike-style ()
+  "Applies Rob Pike's standard: 8-width hardware tabs and auto-format on save."
+  (setq-local indent-tabs-mode t)
+  (setq-local tab-width 8)
+  (add-hook 'before-save-hook
+            (lambda ()
+              (when (eglot-managed-p)
+                (ignore-errors (eglot-format-buffer))))
+            10 t))
 
 ;;; Languages
 
 (use-package go-ts-mode
   :defer t
   :mode ("\\.go\\'" "/go\\.mod\\'" "/go\\.work\\'")
-  :hook ((go-ts-mode . eglot-ensure)
+  :hook ((go-ts-mode . core-apply-pike-style)
          (go-ts-mode . (lambda ()
-                         (add-hook 'before-save-hook #'eglot-format-buffer -10 t)
                          (add-hook 'before-save-hook
-                                   (lambda () (call-interactively 'eglot-code-action-organize-imports))
-                                   nil t))))
-  :config
-  (with-eval-after-load 'eglot
-    (add-to-list 'eglot-server-programs
-                 '((go-ts-mode go-mod-ts-mode go-work-ts-mode) .
-                   ("gopls" :initializationOptions
-                    (:staticcheck t :gofumpt t))))))
-
-(use-package ruby-ts-mode
-  :defer t
-  :hook (ruby-ts-mode . eglot-ensure)
-  :config
-  (with-eval-after-load 'eglot
-    (add-to-list 'eglot-server-programs '((ruby-mode ruby-ts-mode) "ruby-lsp"))))
+                                   (lambda ()
+                                     (when (eglot-managed-p)
+                                       (ignore-errors
+                                         (eglot-code-action-organize-imports (point-min) (point-max)))))
+                                   nil t)))))
 
 (use-package c-ts-mode
   :defer t
-  :hook ((c-ts-mode c++-ts-mode) . eglot-ensure))
+  :custom
+  (c-ts-mode-indent-style 'k&r)
+  (c-ts-mode-indent-offset 8)
+  :hook ((c-ts-mode c++-ts-mode) . core-apply-pike-style))
 
 (use-package yaml-ts-mode :defer t :mode "\\.ya?ml\\'")
 (use-package json-ts-mode :defer t :mode "\\.json\\'")
@@ -102,6 +134,65 @@
   (web-mode-code-indent-offset 2)
   (web-mode-enable-auto-pairing t)
   (web-mode-enable-current-element-highlight nil))
+
+;;; Project scaffolding
+
+;; C/C++
+(defun core-scaffold-c-project (dir type)
+  "Scaffold new C or C++ TYPE project in DIR.
+Create optimal .clangd and .clang-format files for Eglot, following Rob Pike/Go style."
+  (interactive
+   (list (read-directory-name "Project directory name: ")
+         (completing-read "Language " '("C" "C++"))))
+  (make-directory dir t)
+
+  (with-temp-file (expand-file-name ".clangd" dir)
+    (insert "CompileFlags:\n  Add: [-Wall, -Wextra, -Wpedantic]\n---\nIf:\n  PathMatch: .*\\."
+            (if (string= type "C") "c\n" "(cpp|cc|cxx|hpp|h)\n")
+            "CompileFlags:\n  Add: ["
+            (if (string= type "C") "-std=c11" "-std=c++17")
+            "]\n"))
+
+  (let ((clang-format-content
+         "BasedOnStyle: LLVM
+UseTab: ForIndentation
+IndentWidth: 8
+TabWidth: 8
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+IndentCaseLabels: false
+PointerAlignment: Right
+ColumnLimit: 100\n"))
+    (with-temp-file (expand-file-name ".clang-format" dir)
+      (insert clang-format-content)))
+
+  (let* ((ext (if (string= type "C") "c" "cpp"))
+         (code (if (string= type "C")
+                   "#include <stdio.h>\n\nint main(void) {\n\tprintf(\"Hello, World!\\n\");\n\treturn 0;\n}\n"
+                 "#include <iostream>\n\nint main() {\n\tstd::cout << \"Hello, World!\\n\";\n\treturn 0;\n}\n"))
+         (main-file (expand-file-name (concat "main." ext) dir)))
+    (with-temp-file main-file (insert code))
+    (find-file main-file)
+    (message "Project %s initialized in %s!" type dir)))
+
+(defun core-scaffold-go-project (dir mod-name)
+  "Scaffold a Go module in DIR with name MOD-NAME."
+  (interactive
+   (list (read-directory-name "Project directory name: ")
+         (read-string "Module name (es. github.com/user/repo): ")))
+  (make-directory dir t)
+
+  (let ((default-directory dir))
+    (shell-command (format "go mod init %s" (shell-quote-argument mod-name)))
+
+    (let ((main-file (expand-file-name "main.go" dir)))
+      (with-temp-file main-file
+        (insert "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello, World!\")\n}\n"))
+      (find-file main-file)
+      (message "Go module '%s' initialized in %s!" mod-name dir))))
 
 (provide 'core-languages)
 ;;; core-languages.el ends here
