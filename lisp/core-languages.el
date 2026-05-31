@@ -97,6 +97,9 @@
 
 ;;; Languages
 
+;; shell
+(add-hook 'after-save-hook #'executable-make-buffer-file-executable-if-script-p)
+
 (use-package go-ts-mode
   :defer t
   :mode ("\\.go\\'" "/go\\.mod\\'" "/go\\.work\\'")
